@@ -4,6 +4,7 @@
 
 <p align="center">
   <b>Pull color palettes from any image and copy the values straight into your 3D app.</b><br>
+  <b>One click turns any palette into Cinema 4D swatches.</b><br>
   Free, single HTML file, runs 100% in the browser. Nothing is uploaded.
 </p>
 
@@ -16,8 +17,27 @@
 
 ![Chromadrop main view](docs/screenshot-app.jpg)
 
-## Features (v0.8)
+## 🎨 Palettes straight into Cinema 4D
 
+Build a palette in Chromadrop and send it to Cinema 4D's **Color Chooser swatches** in seconds. No manual typing, no color drift.
+
+<p align="center">
+  <img src="docs/chromadrop-c4d.gif" alt="Chromadrop palette landing in Cinema 4D swatches" width="640">
+</p>
+
+1. Open **Share → C4D**, set the palette name, pick **Document** (saved with the .c4d) or **Global** (every project).
+2. Hit **Copy** (or **Download .py**).
+3. In Cinema 4D: **Extensions → Script Manager**, paste, **Execute**.
+
+The palette shows up as a new swatch group named after your palette, with the exact same colors. Values are written as sRGB 0-1, which is what the Color Chooser expects. Tested on Cinema 4D 2025.3.
+
+<p align="center">
+  <img src="docs/chromadrop-c4d-share.jpg" alt="Share window, C4D tab with the generated script" width="820">
+</p>
+
+## Features (v0.9)
+
+- **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Smart pins**: auto extract (weighted k-means in CIELAB) drops numbered pins on each dominant color. Controls for max colors, min coverage % and "snap to flat" (exact colors for flat art). Sliders update live.
 - **Edit pins freely**: drag any pin to resample, click empty space to add one, select and press `Del` to remove. Pins you add or move are kept when you re-extract. Adjustable sample radius and loupe.
 - **Remove similar**: drops auto colors that are too close to each other or to your pins (adjustable ΔE).
@@ -31,18 +51,19 @@
 
 ![Chromadrop share window](docs/screenshot-share.jpg)
 
-One window, five tabs:
+One window, six tabs:
 
 - **PNG card**: image + palette strip or grid, names, HEX / RGB / Linear labels, dark or light theme. Download or copy straight into a chat.
 - **Markdown**: table for GitHub, Notion, Obsidian.
 - **Slack**: ready-to-paste message with an aligned value block.
 - **Plain text**: works anywhere.
+- **C4D**: a Python script that adds the palette as a swatch group in Cinema 4D's Color Chooser (Document or Global). Paste in Script Manager and run.
 - **Link**: the palette lives in the URL, no upload. Whoever opens it can drop their own image and see it rebuilt with your palette in Blocks view.
 
 ## Run
 
 - **Online**: <https://kumodot.github.io/Chromadrop/>
-- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.8.html` in any modern browser. No install, no build.
+- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.9.html` in any modern browser. No install, no build.
 
 Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `Del` remove selected pin, `Esc` deselect.
 
