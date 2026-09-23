@@ -47,7 +47,7 @@ The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color 
 2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
 3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
 
-## Features (v0.12.1)
+## Features (v0.12.2)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -77,7 +77,7 @@ One window, three categories:
 ## Run
 
 - **Online**: <https://kumodot.github.io/Chromadrop/>
-- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.12.1.html` in any modern browser. No install, no build.
+- **Local**: double-click `Run_Chromadrop.bat`, or open `index.html` in any modern browser. No install, no build.
 
 Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `L` library, `C` copy the card as an image, `V` value view, `Del` remove selected pin, `Esc` deselect.
 
