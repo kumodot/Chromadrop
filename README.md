@@ -35,7 +35,19 @@ The palette shows up as a new swatch group named after your palette, with the ex
   <img src="docs/chromadrop-c4d-share.jpg" alt="Share window, C4D tab with the generated script" width="820">
 </p>
 
-## Features (v0.11.5)
+## 🎬 Color scripts from video
+
+The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color script: one column per sampled frame, its palette stacked light to dark, key frames underneath and one palette for the whole sequence. There's a contact sheet view too, with every sampled frame and its colors.
+
+<p align="center">
+  <img src="docs/chromadrop-color-script.png" alt="Color script of a short clip: palette bands per frame, key frames and the sequence palette" width="820">
+</p>
+
+1. Open the **Video** tab and drop an MP4 / WebM, or several images (sorted by name).
+2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
+3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
+
+## Features (v0.12.1)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -49,7 +61,8 @@ The palette shows up as a new swatch group named after your palette, with the ex
 - **Click to copy**: HEX, RGB 0-255, sRGB 0-1, Linear 0-1, HSV. Wrap styles: plain, Python tuple, VEX `{}`, `c4d.Vector()`, GLSL `vec3()`.
 - **Blocks view**: the image rebuilt with only your palette colors, with mosaic block size and a cleanup filter that eats small specks. Export as PNG.
 - **Copy all**: HEX / RGB / sRGB / Linear lists, Python list, VEX `vector[]`, CSS vars, JSON.
-- **Modules**: workspaces as tabs in the header (Image for now, Board and Script coming). Turn them on/off in Settings.
+- **Video module**: drop a video (MP4 / WebM, whatever your browser plays) or a set of frames. Samples N frames and builds a **contact sheet** (thumbnails + palette per frame) and a **color script** (one column per frame as palette bands, barcode or average, with key frames). A **sequence palette** combines all frames into N colors. Send any frame to the Image module at full resolution, add a frame's colors, and export both views as PNG. Everything runs in the browser, nothing is uploaded.
+- **Modules**: workspaces as tabs in the header (Image and Video, Board coming). Turn them on/off in Settings.
 
 ## Share
 
@@ -64,7 +77,7 @@ One window, three categories:
 ## Run
 
 - **Online**: <https://kumodot.github.io/Chromadrop/>
-- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.11.5.html` in any modern browser. No install, no build.
+- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.12.1.html` in any modern browser. No install, no build.
 
 Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `L` library, `C` copy the card as an image, `V` value view, `Del` remove selected pin, `Esc` deselect.
 
