@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.2
+  Chromadrop v0.12.3
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.3 (2026-09-23)
+    - "♥ Support" button in the header. Quiet by default. After you've
+      exported or copied a few things, it starts a soft pulse (at most once
+      every 3 weeks, only after an export or a quiet moment). Clicking it slides
+      in a short note with a Ko-fi link; any click on the note closes it.
+      "Don't remind me" stops the pulse for good. Nothing ever pops up by itself.
   v0.12.2 (2026-09-23)
     - The app now lives in index.html (fixed name): the site link never
       changes between versions. The version is shown in the header badge,
@@ -151,7 +157,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.2 · image palette extractor</title>
+<title>Chromadrop v0.12.3 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -328,6 +334,30 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .panel-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .panel-foot .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .panel-foot .line .spacer{flex:1}
+button.ghost.support{color:#e9c98f;background:rgba(224,163,58,.10);border-color:rgba(224,163,58,.32)}
+button.ghost.support:hover{color:var(--accent2);background:rgba(224,163,58,.18);border-color:rgba(224,163,58,.6)}
+button.support .heart{color:var(--accent);display:inline-block}
+button.ghost.support.nudge{color:var(--accent2);animation:supGlow 2.4s ease-in-out infinite}
+button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
+@keyframes supGlow{0%,60%,100%{box-shadow:0 0 0 0 rgba(224,163,58,0);background:rgba(224,163,58,.10);border-color:rgba(224,163,58,.32)}
+  20%{box-shadow:0 0 0 5px rgba(224,163,58,.28);background:rgba(224,163,58,.30);border-color:rgba(224,163,58,.9)}
+  40%{box-shadow:0 0 0 9px rgba(224,163,58,0);background:rgba(224,163,58,.18);border-color:rgba(224,163,58,.6)}}
+@keyframes supBeat{0%,50%,100%{transform:scale(1)}12%{transform:scale(1.35)}24%{transform:scale(1)}36%{transform:scale(1.2)}}
+#supportCard{position:fixed;top:58px;right:16px;width:340px;display:flex;gap:12px;padding:16px 16px 12px;background:var(--bg2);border:1px solid var(--accent);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.55);z-index:60;cursor:pointer;
+  transform-origin:top right;animation:supIn .45s cubic-bezier(.2,1.4,.4,1) both}
+#supportCard[hidden]{display:none}
+#supportCard.out{animation:supOut .25s ease-in both}
+@keyframes supIn{from{opacity:0;transform:translateY(-14px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes supOut{to{opacity:0;transform:translateY(-10px) scale(.96)}}
+#supportCard .sc-heart{font-size:26px;line-height:1;color:var(--accent);animation:supBeat 2.4s ease-in-out infinite}
+#supportCard b{font-size:14px;color:var(--fg)}
+#supportCard p{margin:6px 0 10px;color:var(--fg2);line-height:1.45}
+#supportCard .sc-kofi{display:inline-block;white-space:nowrap;background:var(--accent);color:#1a1307;font-weight:600;text-decoration:none;padding:7px 12px;border-radius:6px}
+#supportCard .sc-kofi:hover{background:var(--accent2)}
+#supportCard .sc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--fg3)}
+#supportCard .sc-never{background:none;border:0;padding:0;color:var(--fg3);text-decoration:underline;font-size:11px}
+#supportCard .sc-never:hover{color:var(--fg2)}
+@media (prefers-reduced-motion:reduce){button.support.nudge,button.support.nudge .heart,#supportCard,#supportCard .sc-heart{animation:none}}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;transition:.18s;background:#000d;border:1px solid var(--line);padding:8px 14px;border-radius:20px;pointer-events:none;font:12px var(--mono);z-index:50}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
@@ -429,11 +459,12 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.2</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.3</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
     <input type="file" id="file" accept="image/*" hidden>
+    <button id="btnSupport" class="ghost support" title="Support Marcelo Souza on Ko-fi"><span class="heart">♥</span> Support</button>
     <button id="btnSettings" class="ghost">Settings</button>
     <button id="btnAbout" class="ghost">About</button>
   </header>
@@ -653,7 +684,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.12.2</div>
+      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.12.3</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -781,13 +812,22 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 </div>
 
 <div id="toast"></div>
+<div id="supportCard" role="dialog" aria-label="Support Chromadrop" hidden>
+  <div class="sc-heart">♥</div>
+  <div class="sc-body">
+    <b>Hi! Quick one…</b>
+    <p>Chromadrop is free and made by one person, between client jobs. If it saved you some time, a coffee of any size helps me keep building it.</p>
+    <a class="sc-kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">♥ Support on Ko-fi</a>
+    <div class="sc-foot"><span>Click anywhere to close</span><button class="sc-never" type="button">Don't remind me</button></div>
+  </div>
+</div>
 
 <script>
 "use strict";
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.2", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.3", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -1647,9 +1687,11 @@ $("#btnCopyAll").addEventListener("click", () => {
   if (!need()) return;
   const sel = $("#copyAllFmt");
   copyText(buildText(sel.value), `${state.palette.length} colors (${sel.options[sel.selectedIndex].text})`);
+  supportTick();
 });
 
 function download(blob, name) {
+  supportTick();
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
@@ -1857,7 +1899,7 @@ function copyCardImage() {
   const blobP = new Promise(res => $("#cardCanvas").toBlob(res, "image/png"));
   try {
     navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })])
-      .then(() => toast("Card copied: paste in Slack, Teams, Figma..."))
+      .then(() => { toast("Card copied: paste in Slack, Teams, Figma..."); supportTick(); })
       .catch(() => blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); }));
   } catch {
     blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); });
@@ -2496,7 +2538,7 @@ $("#scCopy").addEventListener("click", () => {
   const cv = scCanvasNow(); if (!cv) return;
   const blobP = new Promise(res => cv.toBlob(res, "image/png"));
   const fallback = () => blobP.then(b => { download(b, scFileName()); toast("Browser blocked image copy: downloaded the PNG instead"); });
-  try { navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })]).then(() => toast(`${sc.view === "sheet" ? "Contact sheet" : "Color script"} copied: paste in Slack, Teams, Figma...`)).catch(fallback); }
+  try { navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })]).then(() => { toast(`${sc.view === "sheet" ? "Contact sheet" : "Color script"} copied: paste in Slack, Teams, Figma...`); supportTick(); }).catch(fallback); }
   catch { fallback(); }
 });
 // Open one sampled frame, full resolution, in the Image module
@@ -2563,6 +2605,57 @@ const scStage = $("#scStage");
 scStage.addEventListener("dragover", e => { if (!e.dataTransfer.types.includes("Files") || e.target.closest("#history")) return; e.preventDefault(); scStage.classList.add("dragover"); });
 scStage.addEventListener("dragleave", () => scStage.classList.remove("dragover"));
 scStage.addEventListener("drop", e => { if (e.target.closest("#history")) return; e.preventDefault(); scStage.classList.remove("dragover"); if (e.dataTransfer.files.length) scOpen(e.dataTransfer.files); });
+
+// ---------------- Support nudge (Ko-fi) ----------------
+// Never pops up by itself. The header button pulses softly once the person has
+// gotten some use out of the app, at most once per cooldown; the note only
+// appears when they click the button.
+const SUP_KEY = "chromadrop.support.v1";
+const sup = Object.assign({ uses: 0, lastNudge: 0, never: false, kofi: 0 }, LS.get(SUP_KEY, {}));
+const SUP_USES = 5, DAY = 864e5, SUP_COOLDOWN = 21 * DAY, SUP_AFTER_KOFI = 120 * DAY, SUP_IDLE = 30e3;
+const saveSup = () => LS.set(SUP_KEY, sup);
+let supPending = false, supIdleT = null;
+function supEligible() {
+  if (sup.never || sup.uses < SUP_USES) return false;
+  const now = Date.now();
+  if (now - sup.lastNudge < SUP_COOLDOWN) return false;
+  if (sup.kofi && now - sup.kofi < SUP_AFTER_KOFI) return false;
+  return true;
+}
+function supNudge() {                       // start the soft pulse (once per cooldown)
+  if (!supEligible() || $("#btnSupport").classList.contains("nudge")) return;
+  $("#btnSupport").classList.add("nudge");
+  sup.lastNudge = Date.now(); saveSup();
+}
+function supArmIdle() {                     // or: pulse after a quiet moment
+  clearTimeout(supIdleT);
+  if (supPending) supIdleT = setTimeout(supNudge, SUP_IDLE);
+}
+// Called after something useful happened (export, copy image, copy all)
+function supportTick() {
+  sup.uses++; saveSup();
+  if (supEligible()) { supPending = true; setTimeout(supNudge, 1800); }
+}
+["mousemove", "keydown", "pointerdown", "wheel"].forEach(ev => window.addEventListener(ev, supArmIdle, { passive: true }));
+if (supEligible()) { supPending = true; supArmIdle(); }
+function supOpen() {
+  const c = $("#supportCard");
+  $("#btnSupport").classList.remove("nudge");
+  c.classList.remove("out"); c.hidden = false;
+}
+function supClose() {
+  const c = $("#supportCard"); if (c.hidden || c.classList.contains("out")) return;
+  c.classList.add("out");
+  setTimeout(() => { c.hidden = true; c.classList.remove("out"); }, 250);
+}
+$("#btnSupport").addEventListener("click", e => { e.stopPropagation(); $("#supportCard").hidden ? supOpen() : supClose(); });
+$("#supportCard").addEventListener("click", e => {
+  if (e.target.closest(".sc-kofi")) { sup.kofi = Date.now(); saveSup(); setTimeout(supClose, 150); return; }
+  if (e.target.closest(".sc-never")) { sup.never = true; saveSup(); toast("Got it, no more reminders. The ♥ button stays if you ever want it."); }
+  supClose();
+});
+document.addEventListener("pointerdown", e => { if (!e.target.closest("#supportCard,#btnSupport")) supClose(); });
+window.addEventListener("keydown", e => { if (e.key === "Escape") supClose(); });
 
 // ---------------- Settings ----------------
 function renderSettings() {

@@ -47,7 +47,7 @@ The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color 
 2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
 3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
 
-## Features (v0.12.2)
+## Features (v0.12.3)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
