@@ -1,11 +1,21 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.10.1
+  Chromadrop v0.10.2
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.10.2 (2026-09-23)
+    - PNG card: "Include image" checkbox (+ Original / Blocks). It turns itself
+      on when the palette came from the loaded image and off when it came from
+      History or a link, with a note saying why. Manual override stays.
+    - "Widths by coverage" is disabled (with the reason) when some colors have
+      no coverage (manual pins, History, link).
+    - Copy image is now the main card action. New "Copy card" button in the
+      palette panel and shortcut C copy the card straight to the clipboard with
+      the last card settings (falls back to a PNG download if the browser
+      blocks image copy).
   v0.10.1 (2026-09-23)
     - Share links always use the public site (kumodot.github.io/Chromadrop),
       even when the app runs from the local file, so they work for anyone.
@@ -83,7 +93,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.10.1</title>
+<title>Chromadrop v0.10.2</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -227,6 +237,9 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .cardopts{display:flex;flex-direction:column;gap:10px}
 .cardopts label{display:flex;flex-direction:column;gap:4px}
 .cardopts label.chk{flex-direction:row;align-items:center;gap:6px}
+.cardopts label.off{opacity:.45}
+.cnote{font-size:11px;color:var(--fg3);margin-top:-4px}
+.cnote:empty{display:none}
 .cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
 .cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
 /* modules */
@@ -285,7 +298,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.10.1</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.10.2</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -364,7 +377,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         </aside>
       </div>
       <div class="hint">
-        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>H: history</span>
+        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>H: history</span><span>C: copy card</span>
         <span class="grow"></span>
         <a href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a>
       </div>
@@ -405,6 +418,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
             <option value="json">JSON</option>
           </select>
           <button id="btnCopyAll">Copy all</button>
+          <button id="btnQuickCard" title="Copy the palette card as an image to the clipboard (C)">⧉ Copy card</button>
         </div>
         <div class="line">
           <button id="btnShare" class="primary" title="Image, Text and Apps exports">Share / Export…</button>
@@ -424,7 +438,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.10.1</div>
+      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.10.2</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your History lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -453,7 +467,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
       <div class="pane cardgrid on" id="paneCard">
       <div class="cardopts">
         <label>Layout
-          <select id="cLayout"><option value="strip">Image + strip</option><option value="grid">Grid cards</option></select>
+          <select id="cLayout"><option value="strip">Strip</option><option value="grid">Grid cards</option></select>
         </label>
         <label>Labels
           <select id="cLabels"><option value="hex">HEX</option><option value="hexrgb" selected>HEX + RGB</option><option value="hexlin">HEX + Linear</option><option value="hexaces">HEX + ACEScg</option><option value="none">None</option></select>
@@ -461,14 +475,16 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         <label>Theme
           <select id="cTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
         </label>
-        <label>Image
-          <select id="cImgMode"><option value="orig">Original</option><option value="blocks">Blocks</option><option value="none">None</option></select>
+        <label class="chk"><input type="checkbox" id="cImgOn" checked> Include image</label>
+        <label id="cImgModeWrap">Image style
+          <select id="cImgMode"><option value="orig">Original</option><option value="blocks">Blocks</option></select>
         </label>
+        <div class="cnote" id="cImgNote"></div>
         <label class="chk"><input type="checkbox" id="cNames" checked> Names + numbers</label>
-        <label class="chk"><input type="checkbox" id="cProp"> Widths by coverage</label>
+        <label class="chk" id="cPropWrap"><input type="checkbox" id="cProp"> Widths by coverage</label>
         <label class="chk"><input type="checkbox" id="cCredit" checked> Credit footer</label>
-        <button id="btnCardDl" class="primary">Download PNG</button>
-        <button id="btnCardCopy">Copy image</button>
+        <button id="btnCardCopy" class="primary" title="Copy the card as an image (paste in Slack, Teams, Figma...). Shortcut on the main screen: C">Copy image</button>
+        <button id="btnCardDl">Download PNG</button>
       </div>
       <div class="cardprev"><canvas id="cardCanvas"></canvas></div>
       </div>
@@ -533,7 +549,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.10.1", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.10.2", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -1263,6 +1279,7 @@ window.addEventListener("keydown", e => {
   if (e.key === "e" || e.key === "E") extract(true);
   if (e.key === "b" || e.key === "B") setView(view.mode === "blocks" ? "orig" : "blocks");
   if ((e.key === "h" || e.key === "H") && !$(".modal.open")) toggleHistory();
+  if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !$(".modal.open")) quickCopyCard();
   if (e.key === "Escape") { const open = $$(".modal.open"); if (open.length) open.forEach(m => m.classList.remove("open")); else select(null); }
   if ((e.key === "Delete" || e.key === "Backspace") && state.selId != null && !$(".modal.open")) { e.preventDefault(); removeColor(state.selId); }
 });
@@ -1363,7 +1380,14 @@ function renderCard() {
   const P = state.palette, dark = $("#cTheme").value === "dark";
   const bg = dark ? "#141518" : "#f4f1ea", fg = dark ? "#ece9e3" : "#1c1c1c", fg2 = dark ? "#8b8f96" : "#6b6a66";
   const title = paletteTitle().trim(), layout = $("#cLayout").value, labels = $("#cLabels").value;
-  const imgMode = $("#cImgMode").value, withImg = imgMode !== "none" && state.imgLoaded, credit = $("#cCredit").checked;
+  const imgMode = $("#cImgMode").value, withImg = $("#cImgOn").checked && state.imgLoaded, credit = $("#cCredit").checked;
+  // Coverage widths only make sense when every color has a coverage value (auto-extracted)
+  const canProp = P.length > 0 && P.every(c => c.source === "auto" && c.weight != null);
+  $("#cProp").disabled = !canProp;
+  $("#cPropWrap").classList.toggle("off", !canProp);
+  $("#cPropWrap").title = canProp ? "Swatch width follows how much of the image each color covers" : "Only for auto-extracted colors (manual pins, History and links have no coverage)";
+  $("#cImgModeWrap").style.display = withImg ? "" : "none";
+  $("#cImgOn").disabled = !state.imgLoaded;
   const W = 1600, pad = 64, inner = W - pad * 2, mono = "ui-monospace, Consolas, 'SF Mono', Menlo, monospace";
   const sans = "system-ui, 'Segoe UI', Roboto, sans-serif";
 
@@ -1394,8 +1418,7 @@ function renderCard() {
   }
   if (layout === "strip") {
     let widths;
-    const allAuto = P.every(c => c.source === "auto");
-    if ($("#cProp").checked && allAuto) {
+    if ($("#cProp").checked && canProp) {
       const ws = P.map(c => Math.max(c.weight, 0.04)), s = ws.reduce((a, b) => a + b, 0);
       widths = ws.map(w => w / s * inner);
     } else widths = P.map(() => inner / n);
@@ -1428,11 +1451,35 @@ function renderCard() {
   }
 }
 $$("#paneCard input, #paneCard select").forEach(el => el.addEventListener("input", renderCard));
+// Include the image only when the palette came from it (auto or pins placed on it).
+// Palettes loaded from History or a link default to a palette-only card.
+function autoCardImage() {
+  const fromImage = state.imgLoaded && state.palette.some(c => c.u != null);
+  $("#cImgOn").checked = fromImage;
+  $("#cImgNote").textContent = !state.imgLoaded ? "No image loaded."
+    : fromImage ? ""
+    : `Image off: palette came from ${state.palette.some(c => c.origin === "history") ? "History" : "a link"}.`;
+}
+$("#cImgOn").addEventListener("change", () => { $("#cImgNote").textContent = ""; });
 $("#btnCardDl").addEventListener("click", () => $("#cardCanvas").toBlob(b => download(b, base() + "_card.png"), "image/png"));
-$("#btnCardCopy").addEventListener("click", () => $("#cardCanvas").toBlob(async b => {
-  try { await navigator.clipboard.write([new ClipboardItem({ "image/png": b })]); toast("Card image copied"); }
-  catch { toast("Image copy not supported here, use Download"); }
-}, "image/png"));
+// Copy the card as PNG. Passing a Promise to ClipboardItem keeps the user gesture
+// alive while the canvas encodes. Falls back to a download if the browser blocks it.
+function copyCardImage() {
+  const blobP = new Promise(res => $("#cardCanvas").toBlob(res, "image/png"));
+  try {
+    navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })])
+      .then(() => toast("Card copied: paste in Slack, Teams, Figma..."))
+      .catch(() => blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); }));
+  } catch {
+    blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); });
+  }
+}
+$("#btnCardCopy").addEventListener("click", copyCardImage);
+function quickCopyCard() {
+  if (!need()) return;
+  autoCardImage(); renderCard(); copyCardImage();
+}
+$("#btnQuickCard").addEventListener("click", quickCopyCard);
 
 // ---------------- Share (Markdown / Slack / plain / link) ----------------
 const paletteTitle = () => state.title != null ? state.title : state.imgName;
@@ -1583,6 +1630,7 @@ $("#btnShare").addEventListener("click", () => {
   if (!need()) return;
   $("#sTitle").value = paletteTitle();
   shareCat = "image"; shareFmt = "card";   // always open on the PNG card
+  autoCardImage();
   $("#shareModal").classList.add("open"); renderShare();
 });
 $$("#shareCats button").forEach(b => b.addEventListener("click", () => { shareCat = b.dataset.cat; shareFmt = lastFmt[shareCat]; renderShare(); }));

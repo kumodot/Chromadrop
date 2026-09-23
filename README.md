@@ -35,7 +35,7 @@ The palette shows up as a new swatch group named after your palette, with the ex
   <img src="docs/chromadrop-c4d-share.jpg" alt="Share window, C4D tab with the generated script" width="820">
 </p>
 
-## Features (v0.10.1)
+## Features (v0.10.2)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **History**: a palette library in a drawer over the image (`H`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -55,16 +55,16 @@ The palette shows up as a new swatch group named after your palette, with the ex
 
 One window, three categories:
 
-- **Image**: PNG card with image + palette strip or grid, names, HEX / RGB / Linear / ACEScg labels, dark or light theme. Download or copy straight into a chat.
+- **Image**: PNG card, strip or grid, with or without the image (turns itself off for palettes loaded from History or a link), names, HEX / RGB / Linear / ACEScg labels, dark or light theme. Download or copy straight into a chat.
 - **Text**: Markdown table (GitHub, Notion, Obsidian), Slack message, plain text, and a **link** where the palette lives in the URL (no upload). Whoever opens it can drop their own image and see it rebuilt with your palette in Blocks view.
 - **Apps**: Cinema 4D swatch script, ASE (Adobe, Affinity, Procreate import), GPL (GIMP, Krita, Inkscape), JSON, CSS.
 
 ## Run
 
 - **Online**: <https://kumodot.github.io/Chromadrop/>
-- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.10.1.html` in any modern browser. No install, no build.
+- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.10.2.html` in any modern browser. No install, no build.
 
-Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `H` history, `Del` remove selected pin, `Esc` deselect.
+Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `H` history, `C` copy the card as an image, `Del` remove selected pin, `Esc` deselect.
 
 ## Notes on color space
 
