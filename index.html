@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.3
+  Chromadrop v0.12.4
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.4 (2026-09-23)
+    - Each module has its own accent color: Image = amber, Video = teal.
+      The header tabs are now a segmented control with a color dot per
+      module, so they read as separate areas. The active module tints its
+      tab, the line under the header, Open, and its own toolbar/export bar.
+    - The palette panel, Share / Export and the Library stay amber in every
+      module (they're palette exports). Brand bits (logo dot, version,
+      About, Support) are always amber.
   v0.12.3 (2026-09-23)
     - "♥ Support" button in the header. Quiet by default. After you've
       exported or copied a few things, it starts a soft pulse (at most once
@@ -157,7 +165,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.3 · image palette extractor</title>
+<title>Chromadrop v0.12.4 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -178,30 +186,39 @@
 :root{
   --bg:#141518; --bg2:#1b1d21; --bg3:#23262b; --line:#2f333a;
   --fg:#e8e6e1; --fg2:#a4a7ad; --fg3:#6d7178;
-  --accent:#e0a33a; --accent2:#f0bd62; --danger:#e0564a;
+  --brand:#e0a33a; --danger:#e0564a;
+  /* module accents: Image = amber, Video = teal */
+  --img:#e0a33a; --img2:#f0bd62; --img-ink:#1a1307; --img-tint:#2a2415;
+  --vid:#5dbba5; --vid2:#80ccba; --vid-ink:#06241d; --vid-tint:#172a26;
+  --accent:var(--img); --accent2:var(--img2); --ink:var(--img-ink); --tint:var(--img-tint);
   --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --r:8px;
 }
 *{box-sizing:border-box}
+/* Video accent: its own area + the header while it's active. Palette panel,
+   Library and modals keep the Image (amber) accent. */
+#modVideo,body[data-mod=video] header.top{--accent:var(--vid);--accent2:var(--vid2);--ink:var(--vid-ink);--tint:var(--vid-tint)}
+aside.panel,.history{--accent:var(--img);--accent2:var(--img2);--ink:var(--img-ink);--tint:var(--img-tint)}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.4 var(--sans)}
 button,select,input{font:inherit;color:inherit}
 button{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
 button:hover{border-color:var(--fg3)}
-button.primary{background:var(--accent);border-color:var(--accent);color:#1a1307;font-weight:600}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--ink);font-weight:600}
 button.primary:hover{background:var(--accent2)}
 button.ghost{background:transparent;border-color:transparent;color:var(--fg2)}
 button.ghost:hover{color:var(--fg);border-color:var(--line)}
-button.ghost.on{color:var(--accent);border-color:var(--accent);background:#2a2415}
+button.ghost.on{color:var(--accent);border-color:var(--accent);background:var(--tint)}
 select,input[type=text],input[type=number]{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
 input[type=range]{accent-color:var(--accent);width:90px;vertical-align:middle}
 input[type=checkbox]{accent-color:var(--accent);vertical-align:middle}
 label{color:var(--fg2);white-space:nowrap}
 .app{display:grid;grid-template-rows:auto 1fr;height:100%}
-header.top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+header.top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg2);position:relative;z-index:1}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--accent);opacity:.85;transition:background .25s;pointer-events:none}
 .brand{font-weight:700;font-size:16px;letter-spacing:.2px}
-.brand .dot{color:var(--accent)}
-.ver{font:600 11px var(--mono);color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:2px}
+.brand .dot{color:var(--brand)}
+.ver{font:600 11px var(--mono);color:var(--brand);border:1px solid var(--brand);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:2px}
 header .spacer{flex:1}
 main{display:grid;grid-template-columns:1fr 500px;min-height:0}
 .stage-wrap{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);overflow:hidden;min-width:0;min-height:0;border-right:1px solid var(--line)}
@@ -256,7 +273,7 @@ main{display:grid;grid-template-columns:1fr 500px;min-height:0}
 #imgBox.value #blockCanvas{image-rendering:auto}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:var(--bg3);padding:5px 10px}
-.seg button.on{background:var(--accent);color:#1a1307;font-weight:600}
+.seg button.on{background:var(--accent);color:var(--ink);font-weight:600}
 .toolbar .grp.dim{opacity:.4;pointer-events:none}
 .pin{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.5);
   display:flex;align-items:center;justify-content:center;font:700 10px var(--sans);cursor:grab;touch-action:none}
@@ -312,7 +329,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto auto auto;min-height:0
 .rhead input.name{flex:1;min-width:0;background:transparent;border:1px solid transparent;padding:2px 4px;border-radius:4px}
 .rhead input.name:hover,.rhead input.name:focus{border-color:var(--line);background:var(--bg3);outline:none}
 .tag{font:600 10px var(--mono);padding:1px 6px;border-radius:10px;background:var(--bg3);color:var(--fg2);white-space:nowrap}
-.tag.tpin{color:#1a1307;background:var(--accent)}
+.tag.tpin{color:var(--ink);background:var(--accent)}
 .rhead .x{padding:0 6px;line-height:18px;background:transparent;border-color:transparent;color:var(--fg3)}
 .rhead .x:hover{color:var(--danger);border-color:var(--line)}
 .vals{display:grid;grid-template-columns:1fr 1fr;gap:3px}
@@ -320,7 +337,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto auto auto;min-height:0
 .val:hover{border-color:var(--accent)}
 .val .k{font:700 9px var(--sans);color:var(--fg3);letter-spacing:.3px;min-width:40px}
 .val .v{font:11.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.val.copied{border-color:var(--accent);background:#2a2415}
+.val.copied{border-color:var(--accent);background:var(--tint)}
 aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .clearwrap{position:relative}
 .clearmenu{position:fixed;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:4px;display:flex;flex-direction:column;min-width:230px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:10}
@@ -335,9 +352,9 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .panel-foot .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .panel-foot .line .spacer{flex:1}
 button.ghost.support{color:#e9c98f;background:rgba(224,163,58,.10);border-color:rgba(224,163,58,.32)}
-button.ghost.support:hover{color:var(--accent2);background:rgba(224,163,58,.18);border-color:rgba(224,163,58,.6)}
-button.support .heart{color:var(--accent);display:inline-block}
-button.ghost.support.nudge{color:var(--accent2);animation:supGlow 2.4s ease-in-out infinite}
+button.ghost.support:hover{color:var(--img2);background:rgba(224,163,58,.18);border-color:rgba(224,163,58,.6)}
+button.support .heart{color:var(--brand);display:inline-block}
+button.ghost.support.nudge{color:var(--img2);animation:supGlow 2.4s ease-in-out infinite}
 button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 @keyframes supGlow{0%,60%,100%{box-shadow:0 0 0 0 rgba(224,163,58,0);background:rgba(224,163,58,.10);border-color:rgba(224,163,58,.32)}
   20%{box-shadow:0 0 0 5px rgba(224,163,58,.28);background:rgba(224,163,58,.30);border-color:rgba(224,163,58,.9)}
@@ -352,7 +369,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 #supportCard .sc-heart{font-size:26px;line-height:1;color:var(--accent);animation:supBeat 2.4s ease-in-out infinite}
 #supportCard b{font-size:14px;color:var(--fg)}
 #supportCard p{margin:6px 0 10px;color:var(--fg2);line-height:1.45}
-#supportCard .sc-kofi{display:inline-block;white-space:nowrap;background:var(--accent);color:#1a1307;font-weight:600;text-decoration:none;padding:7px 12px;border-radius:6px}
+#supportCard .sc-kofi{display:inline-block;white-space:nowrap;background:var(--accent);color:var(--ink);font-weight:600;text-decoration:none;padding:7px 12px;border-radius:6px}
 #supportCard .sc-kofi:hover{background:var(--accent2)}
 #supportCard .sc-foot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:var(--fg3)}
 #supportCard .sc-never{background:none;border:0;padding:0;color:var(--fg3);text-decoration:underline;font-size:11px}
@@ -371,7 +388,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 .about p{color:var(--fg2)}
 .about a{color:var(--accent)}
 .about .credit{font:13px var(--mono);color:var(--fg);background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--line)}
-.kofi{display:inline-block;margin-top:6px;background:var(--accent);color:#1a1307 !important;text-decoration:none;font-weight:700;padding:8px 14px;border-radius:8px}
+.kofi{display:inline-block;margin-top:6px;background:var(--accent);color:var(--ink) !important;text-decoration:none;font-weight:700;padding:8px 14px;border-radius:8px}
 .cardlg{width:min(1100px,100%)}
 .sharedlg{width:min(1100px,100%)}
 .sharetop{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
@@ -381,7 +398,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 .pane:not(.on){display:none !important}
 .pane.cardgrid.on{display:grid}
 .tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
-.tabs button.on{background:var(--accent);border-color:var(--accent);color:#1a1307;font-weight:600}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:var(--ink);font-weight:600}
 .shareopts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
 #shareText{width:100%;height:320px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.5 var(--mono);white-space:pre}
 .sharefoot{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
@@ -398,9 +415,15 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 .cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
 .cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
 /* modules */
-.modtabs{display:flex;gap:2px;margin-left:10px}
-.modtabs button{background:transparent;border:1px solid transparent;color:var(--fg2);padding:5px 12px;border-radius:6px}
-.modtabs button.on{background:var(--bg3);border-color:var(--line);color:var(--fg);font-weight:600}
+.modtabs{display:flex;gap:4px;margin-left:12px;padding:3px;background:var(--bg);border:1px solid var(--line);border-radius:9px}
+.modtabs button{--c:var(--fg3);display:flex;align-items:center;gap:7px;background:transparent;border:1px solid transparent;color:var(--fg2);padding:5px 14px 5px 11px;border-radius:6px;font-weight:600;transition:color .15s,background .15s,border-color .15s}
+.modtabs button i{width:9px;height:9px;border-radius:50%;background:var(--c);opacity:.55;transition:opacity .15s,box-shadow .15s}
+.modtabs button:hover{color:var(--fg);background:var(--bg3);border-color:transparent}
+.modtabs button:hover i{opacity:1}
+.modtabs button.on{color:var(--c);background:color-mix(in srgb,var(--c) 15%,transparent);border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+.modtabs button.on i{opacity:1;box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent)}
+.modtabs [data-mod=image]{--c:var(--img)}
+.modtabs [data-mod=video]{--c:var(--vid)}
 .module[hidden]{display:none !important}
 /* history drawer */
 .stagebox .history{position:absolute;top:0;right:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.45);display:grid;grid-template-rows:auto auto 1fr auto;transform:translateX(100%);transition:transform .2s ease;z-index:5}
@@ -412,7 +435,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 .hist-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
 .hist-head b{flex:1}
 .hist-drop{margin:10px 12px 4px;padding:12px;border:2px dashed var(--line);border-radius:10px;color:var(--fg3);text-align:center;font-size:12px}
-.history.dropping .hist-drop{border-color:var(--accent);color:var(--fg);background:#2a2415}
+.history.dropping .hist-drop{border-color:var(--accent);color:var(--fg);background:var(--tint)}
 .hist-list{overflow:auto;padding:6px 12px 12px;display:flex;flex-direction:column;gap:8px}
 .hist-empty{color:var(--fg3);text-align:center;padding:30px 10px;font-size:12px}
 .hcard{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;display:flex;flex-direction:column;gap:6px}
@@ -459,7 +482,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.3</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.4</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -683,8 +706,8 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
   <div class="dlg about">
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
-      <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.12.3</div>
+      <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.4</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -827,7 +850,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.3", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.4", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -2219,13 +2242,14 @@ let activeModule = null;
 const moduleOn = m => m.core || settings.modules[m.id] !== false;
 function renderModTabs() {
   const on = MODULES.filter(moduleOn);
-  $("#modTabs").innerHTML = on.map(m => `<button data-mod="${m.id}" class="${activeModule && activeModule.id === m.id ? "on" : ""}" title="${m.desc}">${m.title}</button>`).join("");
+  $("#modTabs").innerHTML = on.map(m => `<button data-mod="${m.id}" class="${activeModule && activeModule.id === m.id ? "on" : ""}" title="${m.desc}"><i></i>${m.title}</button>`).join("");
 }
 function setModule(id) {
   const m = MODULES.find(x => x.id === id && moduleOn(x)) || MODULES.find(moduleOn);
   if (activeModule && activeModule !== m) activeModule.leave();
   MODULES.forEach(x => { const el = $(x.el); if (el) el.hidden = x !== m; });
   activeModule = m;
+  document.body.dataset.mod = m.id;   // drives the module accent color
   $("#btnOpen").textContent = m.openLabel || "Open image";
   const box = $(m.el + " .stagebox"), lib = $("#history");   // the Library drawer follows the active module
   if (box && lib && lib.parentElement !== box) box.appendChild(lib);
