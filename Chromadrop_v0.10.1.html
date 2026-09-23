@@ -1,11 +1,30 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.9
+  Chromadrop v0.10.1
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.10.1 (2026-09-23)
+    - Share links always use the public site (kumodot.github.io/Chromadrop),
+      even when the app runs from the local file, so they work for anyone.
+      Links are no longer skipped in Markdown / Slack / text when local.
+    - Removed the "Swatch images" Markdown option (third-party image service).
+    - Clearer Cinema 4D option names: "This scene only" / "All scenes".
+  v0.10 (2026-09-23)
+    - Modules: workspace tabs in the header (Image for now) with enter/leave
+      hooks. Settings > Modules turns modules on/off (saved in the browser).
+    - History: palette library in a drawer over the stage (H). Save by dragging
+      "Save" onto it or clicking it, name prompt, then load / add / rename /
+      delete / drag to reorder. Sort: manual, newest, oldest, name, color.
+      Only colors + names are stored (localStorage), never the image.
+      Export / import as .json for backup or another computer.
+    - Share split in categories: Image (PNG card, default) | Text (Markdown,
+      Slack, plain, link) | Apps (Cinema 4D, ASE, GPL, JSON, CSS). The file
+      buttons left the palette panel.
+    - ACEScg values (AP1 linear, Bradford D65->D60) per color, in Copy all,
+      JSON, share text and card labels. Toggle in Settings.
   v0.9 (2026-09-18)
     - Share > C4D tab: generates a Python script that adds the palette as a
       swatch group in Cinema 4D's Color Chooser (Document or Global).
@@ -64,7 +83,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.9</title>
+<title>Chromadrop v0.10.1</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -172,6 +191,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
 .val .k{font:700 9px var(--sans);color:var(--fg3);letter-spacing:.3px;min-width:40px}
 .val .v{font:11.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .val.copied{border-color:var(--accent);background:#2a2415}
+aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .panel-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .panel-foot .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .panel-foot .line .spacer{flex:1}
@@ -209,21 +229,73 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
 .cardopts label.chk{flex-direction:row;align-items:center;gap:6px}
 .cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
 .cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
+/* modules */
+.modtabs{display:flex;gap:2px;margin-left:10px}
+.modtabs button{background:transparent;border:1px solid transparent;color:var(--fg2);padding:5px 12px;border-radius:6px}
+.modtabs button.on{background:var(--bg3);border-color:var(--line);color:var(--fg);font-weight:600}
+.module[hidden]{display:none !important}
+/* history drawer */
+#stage .history{position:absolute;top:0;right:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.45);display:grid;grid-template-rows:auto auto 1fr auto;transform:translateX(100%);transition:transform .2s ease;z-index:5}
+#stage .history.open{transform:none}
+.hist-handle{position:absolute;left:-30px;top:50%;transform:translateY(-50%);width:30px;padding:10px 0;border-radius:8px 0 0 8px;border:1px solid var(--line);border-right:0;background:var(--bg2);display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:-4px 0 12px rgba(0,0,0,.35)}
+.hist-handle span{writing-mode:vertical-rl;transform:rotate(180deg);font:700 11px var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--fg2)}
+.hist-handle b{font:600 10px var(--mono);color:var(--accent)}
+.hist-handle.drop,.history.dropping .hist-handle{border-color:var(--accent)}
+.hist-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.hist-head b{flex:1}
+.hist-drop{margin:10px 12px 4px;padding:12px;border:2px dashed var(--line);border-radius:10px;color:var(--fg3);text-align:center;font-size:12px}
+.history.dropping .hist-drop{border-color:var(--accent);color:var(--fg);background:#2a2415}
+.hist-list{overflow:auto;padding:6px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.hist-empty{color:var(--fg3);text-align:center;padding:30px 10px;font-size:12px}
+.hcard{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;display:flex;flex-direction:column;gap:6px}
+.hcard[draggable=true]{cursor:grab}
+.hcard.dragging{opacity:.4}
+.hcard.dropabove{box-shadow:0 -2px 0 var(--accent)}
+.hcard.flash{border-color:var(--accent)}
+.hstrip{display:flex;height:30px;border-radius:6px;overflow:hidden}
+.hstrip i{flex:1;cursor:copy}
+.hmeta{display:flex;align-items:baseline;gap:6px;min-width:0}
+.hname{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmeta input{flex:1;min-width:0;padding:2px 5px}
+.hdate{font:10px var(--mono);color:var(--fg3);white-space:nowrap}
+.hact{display:flex;gap:4px}
+.hact button{padding:3px 8px;font-size:12px}
+.hact button[data-act=load]{flex:1}
+.hact button.sure{background:var(--danger);border-color:var(--danger);color:#fff}
+.hist-foot{display:flex;align-items:center;gap:4px;padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--fg3)}
+.hist-foot .spacer{flex:1}
+#btnSavePal{padding:4px 10px;cursor:grab}
+.namedlg{width:420px}
+.namedlg label{display:flex;flex-direction:column;gap:6px}
+.swprev{display:flex;height:34px;border-radius:6px;overflow:hidden;margin-top:12px}
+.swprev i{flex:1}
+.setdlg{width:460px}
+.setdlg h4{margin:4px 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3)}
+.modrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--bg)}
+.modrow .d{color:var(--fg3);font-size:12px}
+.modrow .grow{flex:1}
+.setnote{color:var(--fg3);font-size:12px;margin:4px 0 16px}
+.subtabs{margin:-2px 0 12px}
+.subtabs button{padding:4px 10px;font-size:12px}
+.subtabs:empty{display:none}
+.cats button{padding:7px 16px;font-weight:600}
 @media (max-width:900px){main{grid-template-columns:1fr;grid-template-rows:55vh auto}.stage-wrap{border-right:0}.cardgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.9</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.10.1</span></div>
+    <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
     <input type="file" id="file" accept="image/*" hidden>
+    <button id="btnSettings" class="ghost">Settings</button>
     <button id="btnAbout" class="ghost">About</button>
   </header>
 
   <main>
-    <section class="stage-wrap">
+    <section class="stage-wrap module" id="modImage">
       <div class="toolbar">
         <div class="grp">
           <span class="gtitle">Auto</span>
@@ -267,9 +339,32 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
         </div>
         <div id="imgBox"><img id="img" alt=""><canvas id="blockCanvas"></canvas><div id="markers"></div></div>
         <canvas id="loupe" width="120" height="140"></canvas>
+        <aside class="history" id="history">
+          <button class="hist-handle" id="histHandle" title="History (H)"><span>History</span><b id="histCount">0</b></button>
+          <div class="hist-head">
+            <b>History</b>
+            <select id="histSort" title="Sort">
+              <option value="manual">Manual</option>
+              <option value="new">Newest</option>
+              <option value="old">Oldest</option>
+              <option value="name">Name</option>
+              <option value="hue">Color</option>
+            </select>
+            <button class="ghost" id="histClose" title="Close (H)">✕</button>
+          </div>
+          <div class="hist-drop" id="histDrop">Drag <b>Save</b> from the palette here<br>or <button id="histSaveBtn">Save current palette</button></div>
+          <div class="hist-list" id="histList"></div>
+          <div class="hist-foot">
+            <span title="Stored in this browser's local storage. Use Export to back it up.">Saved in this browser</span>
+            <span class="spacer"></span>
+            <button class="ghost" id="histExport" title="Download the whole library as .json">Export</button>
+            <button class="ghost" id="histImport" title="Import a library or a palette .json">Import</button>
+            <input type="file" id="histFile" accept=".json,application/json" hidden>
+          </div>
+        </aside>
       </div>
       <div class="hint">
-        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span>
+        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>H: history</span>
         <span class="grow"></span>
         <a href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a>
       </div>
@@ -278,6 +373,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
     <aside class="panel">
       <div class="panel-head">
         <h2>Palette</h2><span class="count" id="count">0</span>
+        <button id="btnSavePal" draggable="true" title="Save to History: click, or drag onto the History tab">★ Save</button>
         <span class="spacer"></span>
         <label title="How RGB / 0-1 values are wrapped when copied">Copy as
           <select id="copyStyle">
@@ -300,19 +396,18 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
             <option value="rgb">RGB 0-255 list</option>
             <option value="srgb">sRGB 0-1 list</option>
             <option value="lin">Linear 0-1 list</option>
+            <option value="aces">ACEScg 0-1 list</option>
             <option value="pyLin">Python list (linear)</option>
             <option value="vexLin">VEX vector[] (linear)</option>
+            <option value="pyAces">Python list (ACEScg)</option>
+            <option value="vexAces">VEX vector[] (ACEScg)</option>
             <option value="css">CSS variables</option>
             <option value="json">JSON</option>
           </select>
           <button id="btnCopyAll">Copy all</button>
         </div>
         <div class="line">
-          <button id="btnShare" class="primary" title="PNG card, Markdown, Slack, link">Share…</button>
-          <button id="btnASE" title="Adobe Swatch Exchange (Photoshop, Illustrator, Affinity…)">ASE</button>
-          <button id="btnGPL" title="GIMP / Krita / Inkscape palette">GPL</button>
-          <button id="btnJSON">JSON</button>
-          <button id="btnCSS">CSS</button>
+          <button id="btnShare" class="primary" title="Image, Text and Apps exports">Share / Export…</button>
           <span class="spacer"></span>
           <button id="btnAutoName" class="ghost" title="Replace every name with an auto name">Auto-name</button>
           <button id="btnClearAuto" class="ghost" title="Remove auto pins (keeps pins you placed or moved)">✕ Auto</button>
@@ -329,8 +424,8 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.9</div>
-      <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field.</p>
+      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.10.1</div>
+      <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your History lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
       <p style="font-size:11px;color:var(--fg3)">Color names: <a href="https://xkcd.com/color/rgb/" target="_blank" rel="noopener">xkcd color survey</a> (CC0) and <a href="https://github.com/meodai/color-names" target="_blank" rel="noopener">color-name-list</a> © 2017 David Aerne (MIT), filtered.</p>
@@ -345,17 +440,15 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
     <header><h3>Share palette</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="sharetop">
-        <div class="tabs" id="shareTabs">
-          <button data-fmt="card" class="on">PNG card</button>
-          <button data-fmt="md">Markdown</button>
-          <button data-fmt="slack">Slack</button>
-          <button data-fmt="plain">Plain text</button>
-          <button data-fmt="link">Link</button>
-          <button data-fmt="c4d" title="Python script that adds the palette to Cinema 4D swatches">C4D</button>
+        <div class="tabs cats" id="shareCats">
+          <button data-cat="image" class="on">Image</button>
+          <button data-cat="text">Text</button>
+          <button data-cat="apps">Apps</button>
         </div>
         <span class="spacer"></span>
         <label>Palette name <input type="text" id="sTitle" style="width:220px"></label>
       </div>
+      <div class="tabs subtabs" id="shareTabs"></div>
 
       <div class="pane cardgrid on" id="paneCard">
       <div class="cardopts">
@@ -363,7 +456,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
           <select id="cLayout"><option value="strip">Image + strip</option><option value="grid">Grid cards</option></select>
         </label>
         <label>Labels
-          <select id="cLabels"><option value="hex">HEX</option><option value="hexrgb" selected>HEX + RGB</option><option value="hexlin">HEX + Linear</option><option value="none">None</option></select>
+          <select id="cLabels"><option value="hex">HEX</option><option value="hexrgb" selected>HEX + RGB</option><option value="hexlin">HEX + Linear</option><option value="hexaces">HEX + ACEScg</option><option value="none">None</option></select>
         </label>
         <label>Theme
           <select id="cTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
@@ -382,8 +475,8 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
 
       <div class="pane" id="paneText">
         <div class="shareopts" id="c4dOpts" style="display:none">
-          <label title="Document: saved with the .c4d file. Global: available in every project.">Swatches
-            <select id="c4dCat"><option value="doc">Document (this .c4d)</option><option value="global">Global (all projects)</option></select>
+          <label title="This scene only: swatches are saved inside the .c4d and travel with the file. All scenes: saved in your Cinema 4D preferences, available in every scene on this computer (not inside the file).">Add swatches to
+            <select id="c4dCat"><option value="doc">This scene only (saved in the .c4d)</option><option value="global">All scenes on this computer</option></select>
           </label>
           <label><input type="checkbox" id="c4dNames" checked> Color names as comments</label>
         </div>
@@ -391,18 +484,44 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
           <label><input type="checkbox" id="sRGB" checked> RGB</label>
           <label><input type="checkbox" id="sSRGB"> sRGB 0-1</label>
           <label><input type="checkbox" id="sLin" checked> Linear 0-1</label>
+          <label title="ACEScg (AP1) linear, for raw values in an ACES pipeline"><input type="checkbox" id="sAces"> ACEScg</label>
           <label><input type="checkbox" id="sHSV"> HSV</label>
-          <label title="Colored squares via placehold.co images. Renders on GitHub/Notion, not in Slack."><input type="checkbox" id="sSwatch"> Swatch images</label>
           <label><input type="checkbox" id="sLink" checked> Include link</label>
         </div>
         <textarea id="shareText" readonly spellcheck="false"></textarea>
         <div class="sharefoot">
           <span class="note" id="shareNote"></span>
-          <button id="btnShareMd">Download .md</button>
-          <button id="btnSharepy" style="display:none">Download .py</button>
+          <button id="btnShareDl">Download</button>
           <button id="btnShareCopy" class="primary">Copy</button>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Save to History -->
+<div class="modal" id="nameModal">
+  <div class="dlg namedlg">
+    <header><h3>Save to History</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <label>Name <input type="text" id="histName" spellcheck="false"></label>
+      <div class="swprev" id="histPrev"></div>
+      <div class="sharefoot"><span class="note">Only colors and names are saved, never the image.</span><button data-close>Cancel</button><button id="histNameOk" class="primary">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal" id="settingsModal">
+  <div class="dlg setdlg">
+    <header><h3>Settings</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <h4>Modules</h4>
+      <div id="modList"></div>
+      <p class="setnote">Each module is a workspace tab. Turn off the ones you don't use. Palette, History and Share work the same in every module.</p>
+      <h4>Values</h4>
+      <label title="ACEScg (AP1) linear values: the sRGB color converted for an ACES render pipeline. Use them when typing raw numbers (VEX, Python, node fields that don't convert)."><input type="checkbox" id="setAces"> Show ACEScg values on each color</label>
+      <p class="setnote">Settings and History are stored in this browser only.</p>
     </div>
   </div>
 </div>
@@ -414,7 +533,7 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.9", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.10.1", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -434,6 +553,15 @@ const state = {
   selId: null,
   suppressed: [],   // Lab colors of auto pins the user deleted; skipped by extract()
 };
+
+// ---------------- Local storage (per browser, never uploaded) ----------------
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+const SETTINGS_KEY = "chromadrop.settings.v1";
+const settings = Object.assign({ modules: {}, acescg: true }, LS.get(SETTINGS_KEY, {}));
+const saveSettings = () => LS.set(SETTINGS_KEY, settings);
 
 // ---------------- Color math ----------------
 const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
@@ -463,6 +591,16 @@ function rgbToHsv(r, g, b) {
     h *= 60; if (h < 0) h += 360;
   }
   return [h, mx ? d / mx : 0, mx];
+}
+// Linear sRGB (Rec.709 primaries, D65) -> ACEScg (AP1 primaries, D60), Bradford adaptation
+const M_709_TO_AP1 = [
+  [0.6130974, 0.3395231, 0.0473795],
+  [0.0701937, 0.9163539, 0.0134524],
+  [0.0206156, 0.1095698, 0.8698146],
+];
+function acescg(c) {
+  const l = [S2L[c.r], S2L[c.g], S2L[c.b]];
+  return M_709_TO_AP1.map(m => m[0] * l[0] + m[1] * l[1] + m[2] * l[2]);
 }
 const hex2 = n => Math.round(n).toString(16).padStart(2, "0").toUpperCase();
 const toHex = c => `#${hex2(c.r)}${hex2(c.g)}${hex2(c.b)}`;
@@ -523,12 +661,14 @@ function values(c) {
   const d = dec();
   const srgb = [c.r, c.g, c.b].map(v => (v / 255).toFixed(d));
   const lin = [c.r, c.g, c.b].map(v => S2L[v].toFixed(d));
+  const aces = acescg(c).map(v => v.toFixed(d));
   const [h, s, v] = rgbToHsv(c.r, c.g, c.b);
   return {
     hex:  { k: "HEX",    show: toHex(c), copy: toHex(c) },
     rgb:  { k: "RGB",    show: `${c.r}, ${c.g}, ${c.b}`, copy: wrap([c.r, c.g, c.b]) },
     srgb: { k: "sRGB",   show: srgb.join(", "), copy: wrap(srgb) },
     lin:  { k: "LINEAR", show: lin.join(", "), copy: wrap(lin) },
+    aces: { k: "ACEScg", show: aces.join(", "), copy: wrap(aces) },
     hsv:  { k: "HSV",    show: `${Math.round(h)}°, ${Math.round(s*100)}%, ${Math.round(v*100)}%`,
             copy: `${Math.round(h)}, ${Math.round(s*100)}, ${Math.round(v*100)}` },
   };
@@ -771,7 +911,7 @@ function renderMarkers() {
 
 function rowHTML(c) {
   const v = values(c);
-  const tag = c.u == null ? `<span class="tag" title="Came from a share link">SHARED</span>`
+  const tag = c.u == null ? (c.origin === "history" ? `<span class="tag" title="Loaded from History">HISTORY</span>` : `<span class="tag" title="Came from a share link">SHARED</span>`)
     : c.source === "pin" ? `<span class="tag tpin" title="Placed or moved by you, kept on re-extract">MANUAL</span>` : `<span class="tag" title="Coverage in the image">AUTO ${(c.weight * 100).toFixed(1)}%</span>`;
   const btn = key => `<button class="val" data-fmt="${key}" title="Click to copy: ${v[key].copy}"><span class="k">${v[key].k}</span><span class="v">${v[key].show}</span></button>`;
   return `
@@ -784,7 +924,7 @@ function rowHTML(c) {
         ${tag}
         <button class="x" title="Remove">✕</button>
       </div>
-      <div class="vals">${btn("hex")}${btn("rgb")}${btn("srgb")}${btn("lin")}${btn("hsv")}</div>
+      <div class="vals">${["hex", "rgb", "srgb", "lin", settings.acescg && "aces", "hsv"].filter(Boolean).map(btn).join("")}</div>
     </div>`;
 }
 
@@ -1110,17 +1250,19 @@ $("#btnClearPins").addEventListener("click", () => { state.palette = []; state.p
 $("#btnOpen").addEventListener("click", () => $("#file").click());
 $("#file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
 const stage = $("#stage");
-stage.addEventListener("dragover", e => { if (dragRow) return; e.preventDefault(); stage.classList.add("dragover"); });
+stage.addEventListener("dragover", e => { if (dragRow || !e.dataTransfer.types.includes("Files") || e.target.closest("#history")) return; e.preventDefault(); stage.classList.add("dragover"); });
 stage.addEventListener("dragleave", () => stage.classList.remove("dragover"));
-stage.addEventListener("drop", e => { e.preventDefault(); stage.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+stage.addEventListener("drop", e => { if (e.target.closest("#history")) return; e.preventDefault(); stage.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 window.addEventListener("paste", e => {
   const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
   if (item) loadFile(item.getAsFile());
 });
 window.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $(".modal.open") && !e.target.closest(".hcard")) { $$(".modal.open").forEach(m => m.classList.remove("open")); return; }
   if (e.target.matches("input,select,textarea")) return;
   if (e.key === "e" || e.key === "E") extract(true);
   if (e.key === "b" || e.key === "B") setView(view.mode === "blocks" ? "orig" : "blocks");
+  if ((e.key === "h" || e.key === "H") && !$(".modal.open")) toggleHistory();
   if (e.key === "Escape") { const open = $$(".modal.open"); if (open.length) open.forEach(m => m.classList.remove("open")); else select(null); }
   if ((e.key === "Delete" || e.key === "Backspace") && state.selId != null && !$(".modal.open")) { e.preventDefault(); removeColor(state.selId); }
 });
@@ -1132,20 +1274,25 @@ const slug = s => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-
 function buildText(fmt) {
   const P = state.palette, d = dec();
   const lin = c => [c.r, c.g, c.b].map(v => S2L[v].toFixed(d));
+  const aces = c => acescg(c).map(v => v.toFixed(d));
   switch (fmt) {
     case "hex":  return P.map(toHex).join("\n");
     case "rgb":  return P.map(c => values(c).rgb.copy).join("\n");
     case "srgb": return P.map(c => values(c).srgb.copy).join("\n");
     case "lin":  return P.map(c => values(c).lin.copy).join("\n");
+    case "aces": return P.map(c => values(c).aces.copy).join("\n");
+    case "pyAces": return "# ACEScg (AP1 linear)\npalette = [\n" + P.map(c => `    (${aces(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
+    case "vexAces": return `// ACEScg (AP1 linear)\nvector palette[] = array(\n` + P.map(c => `    set(${aces(c).join(", ")})`).join(",\n") + "\n);";
     case "pyLin": return "palette = [\n" + P.map(c => `    (${lin(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
     case "vexLin": return `vector palette[] = array(\n` + P.map(c => `    set(${lin(c).join(", ")})`).join(",\n") + "\n);";
     case "css":  return ":root {\n" + P.map(c => `  --${slug(c.name)}: ${toHex(c)};`).join("\n") + "\n}";
     case "json": return JSON.stringify({
-      name: state.imgName, generator: `${APP.name} v${APP.version}`,
+      name: paletteTitle() || state.imgName, generator: `${APP.name} v${APP.version}`,
       colors: P.map(c => ({
         name: c.name, hex: toHex(c), rgb: [c.r, c.g, c.b],
         srgb: [c.r, c.g, c.b].map(v => +(v / 255).toFixed(6)),
         linear: [c.r, c.g, c.b].map(v => +S2L[v].toFixed(6)),
+        acescg: acescg(c).map(v => +v.toFixed(6)),
         source: c.source, coverage: c.source === "auto" ? +c.weight.toFixed(4) : null,
       })),
     }, null, 2);
@@ -1162,16 +1309,11 @@ function download(blob, name) {
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 const base = () => `${slug(state.imgName)}_palette`;
-$("#btnJSON").addEventListener("click", () => need() && download(new Blob([buildText("json")], { type: "application/json" }), base() + ".json"));
-$("#btnCSS").addEventListener("click", () => need() && download(new Blob([buildText("css")], { type: "text/css" }), base() + ".css"));
-$("#btnGPL").addEventListener("click", () => {
-  if (!need()) return;
-  const txt = `GIMP Palette\nName: ${state.imgName}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
+function buildGPL() {
+  return `GIMP Palette\nName: ${paletteTitle() || state.imgName}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
     state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${c.name} ${toHex(c)}`).join("\n") + "\n";
-  download(new Blob([txt], { type: "text/plain" }), base() + ".gpl");
-});
-$("#btnASE").addEventListener("click", () => {
-  if (!need()) return;
+}
+function buildASE() {
   // Adobe Swatch Exchange v1.0, big-endian
   const blocks = state.palette.map(c => {
     const name = (c.name || toHex(c)) + "\0";
@@ -1189,8 +1331,8 @@ $("#btnASE").addEventListener("click", () => {
   const head = new DataView(new ArrayBuffer(12));
   "ASEF".split("").forEach((ch, i) => head.setUint8(i, ch.charCodeAt(0)));
   head.setUint16(4, 1); head.setUint16(6, 0); head.setUint32(8, blocks.length);
-  download(new Blob([head.buffer, ...blocks], { type: "application/octet-stream" }), base() + ".ase");
-});
+  return new Blob([head.buffer, ...blocks], { type: "application/octet-stream" });
+}
 
 // ---------------- PNG card ----------------
 function roundRect(ctx, x, y, w, h, r) {
@@ -1204,6 +1346,7 @@ function labelLines(c, mode, i, names) {
   if (mode === "none") return out;
   out.push({ t: hex, bold: !names });
   if (mode === "hexlin") out.push({ t: [c.r, c.g, c.b].map(v => S2L[v].toFixed(d)).join(" "), dim: true });
+  if (mode === "hexaces") out.push({ t: "ACEScg " + acescg(c).map(v => v.toFixed(d)).join(" "), dim: true });
   if (mode === "hexrgb") out.push({ t: `${c.r} ${c.g} ${c.b}`, dim: true });
   return out;
 }
@@ -1294,6 +1437,7 @@ $("#btnCardCopy").addEventListener("click", () => $("#cardCanvas").toBlob(async 
 // ---------------- Share (Markdown / Slack / plain / link) ----------------
 const paletteTitle = () => state.title != null ? state.title : state.imgName;
 let shareFmt = "card";
+const PUBLIC_URL = "https://kumodot.github.io/Chromadrop/";
 function shareLink() {
   const P = state.palette;
   const q = new URLSearchParams();
@@ -1301,7 +1445,8 @@ function shareLink() {
   if (P.some(c => c.userNamed)) q.set("n", P.map(c => c.name.replace(/\|/g, "/")).join("|"));
   if (paletteTitle()) q.set("t", paletteTitle());
   // Hosted: point at the site root so links survive version bumps (index.html keeps the hash)
-  const baseUrl = location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/[^/]*$/, "") : location.href.split("#")[0];
+  // Local file (.bat) -> public site, so the link works for anyone
+  const baseUrl = location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/[^/]*$/, "") : PUBLIC_URL;
   return baseUrl + "#" + q.toString();
 }
 function shareCols(c) {
@@ -1309,24 +1454,30 @@ function shareCols(c) {
   if ($("#sRGB").checked) cols.push(["RGB", `${c.r}, ${c.g}, ${c.b}`]);
   if ($("#sSRGB").checked) cols.push(["sRGB 0-1", [c.r, c.g, c.b].map(v => (v / 255).toFixed(d)).join(", ")]);
   if ($("#sLin").checked) cols.push(["Linear 0-1", [c.r, c.g, c.b].map(v => S2L[v].toFixed(d)).join(", ")]);
+  if ($("#sAces").checked) cols.push(["ACEScg", acescg(c).map(v => v.toFixed(d)).join(", ")]);
   if ($("#sHSV").checked) { const [h, s, v] = rgbToHsv(c.r, c.g, c.b); cols.push(["HSV", `${Math.round(h)}°, ${Math.round(s * 100)}%, ${Math.round(v * 100)}%`]); }
   return cols;
 }
 function buildShare(fmt) {
   const P = state.palette, title = paletteTitle() || "Palette";
-  const link = $("#sLink").checked && location.protocol !== "file:" ? shareLink() : null;
+  const link = $("#sLink").checked ? shareLink() : null;
   const credit = `Made with ${APP.name}`;
   if (fmt === "link") return shareLink();
   if (fmt === "c4d") return buildC4D();
+  if (fmt === "gpl") return buildGPL();
+  if (fmt === "json" || fmt === "css") return buildText(fmt);
+  if (fmt === "ase") return `Adobe Swatch Exchange (.ase) is a binary file: use Download.
+Opens in Photoshop, Illustrator, InDesign, Affinity, Procreate (import) and more.
+
+${paletteTitle() || "Palette"} · ${P.length} colors
+` + P.map((c, i) => `${String(i + 1).padStart(2)}  ${toHex(c)}  ${c.name}`).join("\n");
   if (fmt === "md") {
     const heads = shareCols(P[0]).map(c => c[0]);
-    const sw = $("#sSwatch").checked;
-    const head = `| # | ${sw ? "Swatch | " : ""}Name | HEX | ${heads.map(h => h + " | ").join("")}`.trimEnd();
-    const sep = "|" + " --- |".repeat(3 + (sw ? 1 : 0) + heads.length);
+    const head = `| # | Name | HEX | ${heads.map(h => h + " | ").join("")}`.trimEnd();
+    const sep = "|" + " --- |".repeat(3 + heads.length);
     const rows = P.map((c, i) => {
       const hex = toHex(c);
-      const img = sw ? `![${hex}](https://placehold.co/24x24/${hex.slice(1)}/${hex.slice(1)}.png) | ` : "";
-      return `| ${i + 1} | ${img}${c.name} | \`${hex}\` | ${shareCols(c).map(v => "`" + v[1] + "` | ").join("")}`.trimEnd();
+      return `| ${i + 1} | ${c.name} | \`${hex}\` | ${shareCols(c).map(v => "`" + v[1] + "` | ").join("")}`.trimEnd();
     });
     return [`## ${title}`, "", `${P.length} colors`, "", head, sep, ...rows, "",
       link ? `[Open in ${APP.name}](${link})` : `_${credit}_`].join("\n");
@@ -1394,38 +1545,57 @@ if __name__ == "__main__":
     main()
 `;
 }
+const SHARE_CATS = {
+  image: [{ fmt: "card", label: "PNG card" }],
+  text: [{ fmt: "md", label: "Markdown" }, { fmt: "slack", label: "Slack" }, { fmt: "plain", label: "Plain text" }, { fmt: "link", label: "Link" }],
+  apps: [{ fmt: "c4d", label: "Cinema 4D" }, { fmt: "ase", label: "ASE" }, { fmt: "gpl", label: "GPL" }, { fmt: "json", label: "JSON" }, { fmt: "css", label: "CSS" }],
+};
+const lastFmt = { image: "card", text: "md", apps: "c4d" };
+let shareCat = "image";
+const DL = { md: [".md", "text/markdown"], c4d: ["_c4d_swatches.py", "text/x-python"], ase: [".ase"], gpl: [".gpl", "text/plain"], json: [".json", "application/json"], css: [".css", "text/css"] };
 function renderShare() {
-  $$("#shareTabs button").forEach(b => b.classList.toggle("on", b.dataset.fmt === shareFmt));
+  $$("#shareCats button").forEach(b => b.classList.toggle("on", b.dataset.cat === shareCat));
+  const subs = SHARE_CATS[shareCat];
+  $("#shareTabs").innerHTML = subs.length > 1 ? subs.map(t => `<button data-fmt="${t.fmt}" class="${t.fmt === shareFmt ? "on" : ""}">${t.label}</button>`).join("") : "";
   const isCard = shareFmt === "card";
   $("#paneCard").classList.toggle("on", isCard); $("#paneText").classList.toggle("on", !isCard);
   if (isCard) { renderCard(); return; }
   $("#shareText").value = buildShare(shareFmt);
   const isC4D = shareFmt === "c4d";
   $("#c4dOpts").style.display = isC4D ? "" : "none";
-  $("#textOpts").style.display = isC4D || shareFmt === "link" ? "none" : "";
-  $("#btnShareMd").style.display = shareFmt === "md" ? "" : "none";
-  $("#btnSharepy").style.display = isC4D ? "" : "none";
-  const local = location.protocol === "file:";
+  $("#textOpts").style.display = ["md", "slack", "plain"].includes(shareFmt) ? "" : "none";
+  const dl = DL[shareFmt];
+  $("#btnShareDl").style.display = dl ? "" : "none";
+  if (dl) $("#btnShareDl").textContent = `Download ${dl[0].replace(/^_c4d_swatches/, "")}`;
+  $("#btnShareCopy").style.display = shareFmt === "ase" ? "none" : "";
   $("#shareNote").textContent =
     isC4D ? "Cinema 4D: Extensions > Script Manager, paste, Execute. Adds a swatch group named after the palette. Running it twice adds a second group."
-    : shareFmt === "link" ? (local ? "You're running a local file: this link only works on your machine. Use the GitHub Pages version to share." : "Anyone opening this link sees the palette (no image is uploaded, colors live in the link).")
-    : shareFmt === "slack" ? "Paste straight into a Slack message. Add a visual with PNG card → Copy image." + (local && $("#sLink").checked ? " Link skipped: local file." : "")
-    : shareFmt === "md" ? "GitHub, Notion, Obsidian, Discord (tables render on GitHub/Notion/Obsidian)." + (local && $("#sLink").checked ? " Link skipped: local file." : "")
+    : shareFmt === "link" ? "Anyone opening this link sees the palette in Chromadrop. The colors live in the link itself, no image is uploaded."
+    : shareFmt === "slack" ? "Paste straight into a Slack message. Add a visual with Image → Copy image."
+    : shareFmt === "md" ? "Notion, GitHub, Obsidian (tables render there). Not for email: use the PNG card or plain text."
+    : shareFmt === "ase" ? "Adobe Swatch Exchange: Photoshop, Illustrator, InDesign, Affinity, Procreate import."
+    : shareFmt === "gpl" ? "GIMP palette: GIMP, Krita, Inkscape, Aseprite."
+    : shareFmt === "json" ? "Full data: HEX, RGB, sRGB, linear and ACEScg per color. Can be imported into History."
+    : shareFmt === "css" ? "CSS custom properties, one per color name."
     : "Works anywhere.";
 }
 $("#btnShare").addEventListener("click", () => {
   if (!need()) return;
   $("#sTitle").value = paletteTitle();
-  shareFmt = "card";   // always open on the PNG card
+  shareCat = "image"; shareFmt = "card";   // always open on the PNG card
   $("#shareModal").classList.add("open"); renderShare();
 });
-$$("#shareTabs button").forEach(b => b.addEventListener("click", () => { shareFmt = b.dataset.fmt; renderShare(); }));
+$$("#shareCats button").forEach(b => b.addEventListener("click", () => { shareCat = b.dataset.cat; shareFmt = lastFmt[shareCat]; renderShare(); }));
+$("#shareTabs").addEventListener("click", e => { const b = e.target.closest("button[data-fmt]"); if (!b) return; shareFmt = lastFmt[shareCat] = b.dataset.fmt; renderShare(); });
 $$("#paneText .shareopts input").forEach(el => el.addEventListener("input", renderShare));
 $("#sTitle").addEventListener("input", () => { state.title = $("#sTitle").value; renderShare(); });
-$("#btnShareCopy").addEventListener("click", () => copyText($("#shareText").value, shareFmt === "link" ? "share link" : shareFmt === "c4d" ? "C4D swatch script" : `${state.palette.length} colors as ${shareFmt === "md" ? "Markdown" : shareFmt === "slack" ? "Slack text" : "text"}`));
-$("#btnSharepy").addEventListener("click", () => download(new Blob([buildC4D()], { type: "text/x-python" }), base() + "_c4d_swatches.py"));
+$("#btnShareCopy").addEventListener("click", () => copyText($("#shareText").value, shareFmt === "link" ? "share link" : shareFmt === "c4d" ? "C4D swatch script" : `${state.palette.length} colors as ${{ md: "Markdown", slack: "Slack text", plain: "text", gpl: "GPL", json: "JSON", css: "CSS" }[shareFmt] || "text"}`));
 $$("#c4dOpts input, #c4dOpts select").forEach(el => el.addEventListener("input", renderShare));
-$("#btnShareMd").addEventListener("click", () => download(new Blob([buildShare("md")], { type: "text/markdown" }), base() + ".md"));
+$("#btnShareDl").addEventListener("click", () => {
+  const dl = DL[shareFmt]; if (!dl || !need()) return;
+  const blob = shareFmt === "ase" ? buildASE() : new Blob([buildShare(shareFmt)], { type: dl[1] });
+  download(blob, base() + dl[0]);
+});
 
 
 // Load a palette from the URL hash (#p=hex-hex&n=name|name&t=title)
@@ -1445,6 +1615,280 @@ function loadFromHash() {
   toast(`Loaded shared palette (${cols.length} colors)`);
 }
 
+// ---------------- Modules ----------------
+// Each workspace is a module: its own header tab, its own panel (el) and
+// enter/leave hooks. The palette, History and Share are shared by all modules.
+// A module can be switched off in Settings (core modules can't).
+const MODULES = [
+  { id: "image", title: "Image", core: true, el: "#modImage",
+    desc: "One image: auto-extracted and hand-placed pins.",
+    enter() { layoutImage(); }, leave() {} },
+  // Planned: { id: "board", title: "Board", ... }, { id: "script", title: "Script", ... }
+];
+let activeModule = null;
+const moduleOn = m => m.core || settings.modules[m.id] !== false;
+function renderModTabs() {
+  const on = MODULES.filter(moduleOn);
+  $("#modTabs").innerHTML = on.map(m => `<button data-mod="${m.id}" class="${activeModule && activeModule.id === m.id ? "on" : ""}" title="${m.desc}">${m.title}</button>`).join("");
+}
+function setModule(id) {
+  const m = MODULES.find(x => x.id === id && moduleOn(x)) || MODULES.find(moduleOn);
+  if (activeModule && activeModule !== m) activeModule.leave();
+  MODULES.forEach(x => { const el = $(x.el); if (el) el.hidden = x !== m; });
+  activeModule = m;
+  m.enter();
+  settings.lastModule = m.id; saveSettings();
+  renderModTabs();
+}
+$("#modTabs").addEventListener("click", e => { const b = e.target.closest("[data-mod]"); if (b) setModule(b.dataset.mod); });
+
+// ---------------- Settings ----------------
+function renderSettings() {
+  $("#modList").innerHTML = MODULES.map(m => `
+    <label class="modrow"><input type="checkbox" data-mod="${m.id}" ${moduleOn(m) ? "checked" : ""} ${m.core ? "disabled" : ""}>
+      <b>${m.title}</b><span class="d grow">${m.desc}</span>${m.core ? '<span class="tag">core</span>' : ""}</label>`).join("");
+  $("#setAces").checked = settings.acescg;
+}
+$("#btnSettings").addEventListener("click", () => { renderSettings(); $("#settingsModal").classList.add("open"); });
+$("#modList").addEventListener("change", e => {
+  const id = e.target.dataset.mod; if (!id) return;
+  settings.modules[id] = e.target.checked; saveSettings();
+  if (!e.target.checked && activeModule && activeModule.id === id) setModule(null); else renderModTabs();
+});
+$("#setAces").addEventListener("change", e => { settings.acescg = e.target.checked; saveSettings(); renderList(); });
+
+// ---------------- History (palette library) ----------------
+// Only colors + names are stored, never the image. Lives in localStorage.
+const LIB_KEY = "chromadrop.history.v1";
+let lib = LS.get(LIB_KEY, []);   // [{ id, name, created, colors: [{ hex, name, w }] }], array order = manual order
+if (!Array.isArray(lib)) lib = [];
+const libSort = { mode: LS.get(LIB_KEY + ".sort", "manual") };
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const hexToRgb = h => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
+const newLibId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function saveLib() {
+  if (!LS.set(LIB_KEY, lib)) toast("Could not save History (storage blocked or full)");
+  $("#histCount").textContent = lib.length;
+}
+// Sort key for "Color": the most saturated color, weighted by coverage (OKLCH chroma).
+// Palettes with no real color (greys, beiges) go last, light to dark.
+function libHueKey(p) {
+  let best = null, bs = -1, L = 0;
+  const n = p.colors.length || 1;
+  for (const c of p.colors) {
+    const [l, a, b] = oklab(...Object.values(hexToRgb(c.hex)));
+    const C = Math.hypot(a, b), w = c.w != null ? c.w : 1 / n, sc = C * Math.sqrt(w);
+    L += l / n;
+    if (sc > bs) { bs = sc; best = { C, h: (Math.atan2(b, a) * 180 / Math.PI + 360) % 360 }; }
+  }
+  if (!best || best.C < 0.04) return 1000 + (1 - L);           // neutrals after all hues
+  return (best.h - 20 + 360) % 360;                           // start around red
+}
+function sortedLib() {
+  const L = [...lib];
+  switch (libSort.mode) {
+    case "new": return L.sort((a, b) => b.created - a.created);
+    case "old": return L.sort((a, b) => a.created - b.created);
+    case "name": return L.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    case "hue": return L.sort((a, b) => libHueKey(a) - libHueKey(b));
+    default: return L;
+  }
+}
+function fmtDate(t) {
+  const d = new Date(t);
+  return d.toLocaleDateString(undefined, { year: "2-digit", month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+function renderLib(flashId) {
+  $("#histCount").textContent = lib.length;
+  $("#histSort").value = libSort.mode;
+  const list = $("#histList");
+  if (!lib.length) { list.innerHTML = `<div class="hist-empty">No saved palettes yet.<br>Only colors and names are stored, never images.</div>`; return; }
+  const manual = libSort.mode === "manual";
+  list.innerHTML = sortedLib().map(p => `
+    <div class="hcard${p.id === flashId ? " flash" : ""}" data-id="${p.id}" draggable="true" title="${manual ? "Drag to reorder, or drop on the palette panel to load" : "Drop on the palette panel to load. Switch sort to Manual to reorder."}">
+      <div class="hstrip">${p.colors.map(c => `<i style="background:${c.hex}" data-hex="${c.hex}" title="${esc(c.name || "")} ${c.hex} (click to copy)"></i>`).join("")}</div>
+      <div class="hmeta"><span class="hname">${esc(p.name)}</span><span class="hdate">${p.colors.length} · ${fmtDate(p.created)}</span></div>
+      <div class="hact">
+        <button data-act="load" title="Load into the stage (replaces the current palette)">Load</button>
+        <button data-act="add" title="Add these colors to the current palette">+ Add</button>
+        <button data-act="ren" title="Rename">✎</button>
+        <button data-act="del" title="Delete">✕</button>
+      </div>
+    </div>`).join("");
+  if (flashId) setTimeout(() => $(`.hcard[data-id="${flashId}"]`)?.classList.remove("flash"), 1500);
+}
+const historyEl = $("#history");
+function toggleHistory(force) {
+  const open = force != null ? force : !historyEl.classList.contains("open");
+  historyEl.classList.toggle("open", open);
+}
+$("#histHandle").addEventListener("click", () => toggleHistory());
+$("#histClose").addEventListener("click", () => toggleHistory(false));
+$("#histSort").addEventListener("change", e => { libSort.mode = e.target.value; LS.set(LIB_KEY + ".sort", libSort.mode); renderLib(); });
+
+// Save flow: name dialog
+function openSaveDialog() {
+  if (!need()) return;
+  $("#histName").value = (paletteTitle() || "Palette").trim();
+  $("#histPrev").innerHTML = state.palette.map(c => `<i style="background:${toHex(c)}"></i>`).join("");
+  $("#nameModal").classList.add("open");
+  setTimeout(() => { $("#histName").focus(); $("#histName").select(); }, 30);
+}
+function commitSave() {
+  const name = $("#histName").value.trim() || "Untitled";
+  const entry = {
+    id: newLibId(), name, created: Date.now(),
+    colors: state.palette.map(c => ({ hex: toHex(c), name: c.name, w: c.source === "auto" && c.weight != null ? +c.weight.toFixed(4) : null })),
+  };
+  lib.unshift(entry);
+  saveLib();
+  $("#nameModal").classList.remove("open");
+  toggleHistory(true);
+  renderLib(entry.id);
+  $("#histList").scrollTop = 0;
+  toast(`Saved "${name}" to History`);
+}
+$("#btnSavePal").addEventListener("click", openSaveDialog);
+$("#histSaveBtn").addEventListener("click", openSaveDialog);
+$("#histNameOk").addEventListener("click", commitSave);
+$("#histName").addEventListener("keydown", e => { if (e.key === "Enter") commitSave(); });
+
+// Drag the palette ("Save" chip) onto the drawer
+const PAL_MIME = "application/x-chromadrop-palette", LIB_MIME = "application/x-chromadrop-lib";
+$("#btnSavePal").addEventListener("dragstart", e => {
+  if (!state.palette.length) { e.preventDefault(); toast("Palette is empty"); return; }
+  e.dataTransfer.setData(PAL_MIME, "1"); e.dataTransfer.setData("text/plain", state.palette.map(toHex).join(" "));
+  e.dataTransfer.effectAllowed = "copy";
+  setTimeout(() => toggleHistory(true), 0);
+});
+historyEl.addEventListener("dragover", e => {
+  const t = e.dataTransfer.types;
+  if (t.includes(PAL_MIME) || t.includes("Files")) { e.preventDefault(); historyEl.classList.add("dropping"); }
+  else if (t.includes(LIB_MIME)) e.preventDefault();
+});
+historyEl.addEventListener("dragleave", e => { if (!historyEl.contains(e.relatedTarget)) historyEl.classList.remove("dropping"); });
+historyEl.addEventListener("drop", e => {
+  historyEl.classList.remove("dropping");
+  const t = e.dataTransfer.types;
+  if (t.includes(PAL_MIME)) { e.preventDefault(); openSaveDialog(); return; }
+  if (t.includes("Files")) { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) importLibFile(f); }
+});
+$("#histHandle").addEventListener("dragenter", () => toggleHistory(true));
+
+// Card actions
+function loadLibEntry(p, append) {
+  const cols = p.colors.map(c => ({ id: state.nextId++, source: "pin", origin: "history", ...hexToRgb(c.hex), name: c.name || "", userNamed: !!c.name, u: null, v: null }));
+  state.palette = append ? [...state.palette, ...cols] : cols;
+  if (!append) { state.title = p.name; state.selId = null; }
+  render();
+  toast(append ? `Added ${cols.length} colors from "${p.name}"` : `Loaded "${p.name}"`);
+}
+function startRename(card, p) {
+  const span = $(".hname", card);
+  const inp = document.createElement("input"); inp.type = "text"; inp.value = p.name;
+  span.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    if (ok && inp.value.trim()) { p.name = inp.value.trim(); saveLib(); }
+    renderLib();
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); if (e.key === "Escape") { e.stopPropagation(); finish(false); } });
+  inp.addEventListener("blur", () => finish(true));
+}
+$("#histList").addEventListener("click", e => {
+  const card = e.target.closest(".hcard"); if (!card) return;
+  const p = lib.find(x => x.id === card.dataset.id); if (!p) return;
+  const sw = e.target.closest(".hstrip i");
+  if (sw) { copyText(sw.dataset.hex); return; }
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "load") loadLibEntry(p, false);
+  else if (act === "add") loadLibEntry(p, true);
+  else if (act === "ren") startRename(card, p);
+  else if (act === "del") {
+    const b = e.target.closest("button");
+    if (!b.classList.contains("sure")) {           // two-click delete, no dialog
+      b.classList.add("sure"); b.textContent = "Sure?";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("sure"); b.textContent = "✕"; } }, 2500);
+      return;
+    }
+    lib = lib.filter(x => x !== p); saveLib(); renderLib(); toast(`Deleted "${p.name}"`);
+  }
+});
+$("#histList").addEventListener("dblclick", e => {
+  const card = e.target.closest(".hcard"); if (!card || !e.target.closest(".hname")) return;
+  startRename(card, lib.find(x => x.id === card.dataset.id));
+});
+
+// Card drag: reorder (manual sort) or drop on the palette panel to load
+let dragLibId = null;
+$("#histList").addEventListener("dragstart", e => {
+  const card = e.target.closest(".hcard"); if (!card) return;
+  dragLibId = card.dataset.id;
+  e.dataTransfer.setData(LIB_MIME, dragLibId); e.dataTransfer.effectAllowed = "copyMove";
+  card.classList.add("dragging");
+});
+$("#histList").addEventListener("dragover", e => {
+  if (!dragLibId || libSort.mode !== "manual") return;
+  e.preventDefault();
+  $$(".hcard").forEach(c => c.classList.remove("dropabove"));
+  const over = e.target.closest(".hcard"); if (over && over.dataset.id !== dragLibId) over.classList.add("dropabove");
+});
+$("#histList").addEventListener("drop", e => {
+  if (!dragLibId || libSort.mode !== "manual") return;
+  e.preventDefault(); e.stopPropagation();
+  const over = e.target.closest(".hcard");
+  const item = lib.find(x => x.id === dragLibId);
+  lib = lib.filter(x => x !== item);
+  const to = over ? lib.findIndex(x => x.id === over.dataset.id) : lib.length;
+  lib.splice(to < 0 ? lib.length : to, 0, item);
+  saveLib(); renderLib();
+});
+$("#histList").addEventListener("dragend", () => { dragLibId = null; $$(".hcard").forEach(c => c.classList.remove("dragging", "dropabove")); });
+const panelEl = $("aside.panel");
+panelEl.addEventListener("dragover", e => { if (e.dataTransfer.types.includes(LIB_MIME)) { e.preventDefault(); panelEl.classList.add("libdrop"); } });
+panelEl.addEventListener("dragleave", e => { if (!panelEl.contains(e.relatedTarget)) panelEl.classList.remove("libdrop"); });
+panelEl.addEventListener("drop", e => {
+  panelEl.classList.remove("libdrop");
+  const id = e.dataTransfer.getData(LIB_MIME); if (!id) return;
+  e.preventDefault();
+  const p = lib.find(x => x.id === id); if (p) loadLibEntry(p, e.shiftKey);
+});
+
+// Export / import (backup, or move History to another browser/computer)
+$("#histExport").addEventListener("click", () => {
+  if (!lib.length) return toast("History is empty");
+  const data = { type: "chromadrop-history", version: 1, app: `${APP.name} v${APP.version}`, exported: new Date().toISOString(), palettes: lib };
+  download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `chromadrop_history_${new Date().toISOString().slice(0, 10)}.json`);
+});
+$("#histImport").addEventListener("click", () => $("#histFile").click());
+$("#histFile").addEventListener("change", e => { if (e.target.files[0]) importLibFile(e.target.files[0]); e.target.value = ""; });
+function importLibFile(file) {
+  const rd = new FileReader();
+  rd.onload = () => {
+    let data; try { data = JSON.parse(rd.result); } catch { return toast("Not a valid .json file"); }
+    const okHex = h => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
+    const clean = p => ({
+      id: typeof p.id === "string" ? p.id : newLibId(),
+      name: String(p.name || "Imported").slice(0, 120),
+      created: Number.isFinite(p.created) ? p.created : Date.now(),
+      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: String(c.name || "").slice(0, 60), w: Number.isFinite(c.w) ? c.w : null })),
+    });
+    let incoming = [];
+    if (data && data.type === "chromadrop-history" && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
+    else if (data && Array.isArray(data.colors)) incoming = [clean({ name: data.name, colors: data.colors.map(c => ({ hex: c.hex, name: c.name, w: c.coverage })) })];
+    incoming = incoming.filter(p => p.colors.length);
+    if (!incoming.length) return toast("No palettes found in that file");
+    const have = new Set(lib.map(p => p.id));
+    const added = incoming.filter(p => !have.has(p.id));
+    lib = [...added, ...lib];
+    saveLib(); toggleHistory(true); renderLib(added[0]?.id);
+    toast(`Imported ${added.length} palette${added.length === 1 ? "" : "s"}` + (added.length < incoming.length ? ` (${incoming.length - added.length} already there)` : ""));
+  };
+  rd.readAsText(file);
+}
+renderLib();
+
 // ---------------- Modals / about ----------------
 $("#btnAbout").addEventListener("click", () => $("#aboutModal").classList.add("open"));
 $$(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) m.classList.remove("open"); }));
@@ -1452,6 +1896,7 @@ $("#creditLine").textContent = CREDIT;
 $("#aboutVer").textContent = `v${APP.version}`;
 $("#verBadge").textContent = `v${APP.version}`;
 document.title = `${APP.name} v${APP.version}`;
+setModule(settings.lastModule || "image");
 loadFromHash();
 </script>
 </body>
