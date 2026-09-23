@@ -1,9 +1,2 @@
-# Local demo media and source screenshots (not part of the site)
-Media/
-Chromadrop_01.jpg
-Chromadrop_02.jpg
-Chromadrop_C4D.*
-
-# Dev notes and test assets (local only)
-HANDOFF.md
-_dev/
+# Everything local-only lives in _local/ (handoff notes, test assets, demo media, source screenshots)
+_local/
