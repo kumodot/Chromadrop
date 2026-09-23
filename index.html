@@ -1,8 +1,157 @@
 <!DOCTYPE html>
+<!--
+  Chromadrop v0.12.2
+  Image palette extractor for 3D artists.
+  Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
+  Support: https://ko-fi.com/msouza3d
+
+  CHANGELOG
+  v0.12.2 (2026-09-23)
+    - The app now lives in index.html (fixed name): the site link never
+      changes between versions. The version is shown in the header badge,
+      the About window and this changelog. Old Chromadrop_vX.Y.html links
+      are sent to the current app by 404.html (shared #palettes kept).
+  v0.12.1 (2026-09-23)
+    - Module renamed "Video" (tab next to Image; "Script" read like a code
+      script). Its colors are tagged VIDEO. Views stay Contact sheet / Color script.
+    - Export moved to the bottom of the module, like the palette panel:
+      "⧉ Copy image" (primary), "Download PNG" and the Dark/Light theme.
+  v0.12 (2026-09-23)
+    - New Script module (tab next to Image, can be switched off in Settings):
+      drop a video (MP4/WebM, whatever the browser plays) or a set of frames
+      (sorted by name). Samples N frames evenly, a small palette per frame.
+    - Contact sheet view: thumbnails + per-frame palette + timecode.
+      Hover a frame: "→ Image" opens that frame (full res) in the Image
+      module, "+ Colors" adds its palette to the panel.
+    - Color script view: one column per frame, as palette bands (light on
+      top), barcode (frame squashed) or average color, with key frames below.
+      Hover shows the frame, click opens it in the Image module.
+    - Sequence palette: all frames combined into N colors; "Use sequence
+      palette" sends it to the panel (Replace/Merge, SCRIPT tag).
+    - PNG export (copy / download, dark or light) of the contact sheet or
+      the color script.
+    - The Library drawer follows the active module.
+  v0.11.5 (2026-09-23)
+    - PNG card Extras: when Harmonies and/or Values are open, they are added to
+      the card below the palette (each with its own checkbox to leave it out).
+  v0.11.4 (2026-09-23)
+    - Toggle buttons show when they're on: ✦ Harmonies, ◐ Values and
+      Whole palette light up (accent border + tint) while their section is open.
+  v0.11.3 (2026-09-23)
+    - Clear ▾ menu is positioned inside the window (it could open off-screen).
+    - Fix: on narrower windows (~1280px) the image area overflowed under the
+      palette panel (grid column now minmax(0,1fr)).
+    - Dropping a Library palette on a non-empty palette asks Replace or Merge
+      (Merge skips colors that are already there). Empty palette loads directly.
+      + Add on a Library card also skips duplicates.
+  v0.11.2 (2026-09-23)
+    - "History" renamed to "Library" everywhere in the UI (it's a palette
+      library, not a list of recent palettes). Shortcut L (H still works).
+      Saved palettes are kept (same storage). Exports now say
+      "chromadrop-library"; old "chromadrop-history" files still import.
+  v0.11.1 (2026-09-23)
+    - Extract (button / E) is now a true reset of the image scan: it also
+      removes colors that didn't come from the image (History, link,
+      Harmonies), keeping only pins you placed on the image.
+    - "Clear ▾" menu replaces ✕ Auto / ✕ All: auto colors, pins you placed,
+      loaded & generated colors, or everything, with counts.
+  v0.11 (2026-09-23)
+    - Harmonies: ✦ on any color opens suggestions (Complementary, Analogous,
+      Triad, Split, Shades) computed in OKLCH with gamut mapping. "Whole
+      palette" suggests accents that fill hue gaps + tinted neutrals.
+      Click a suggestion to add it to the palette (GENERATED tag).
+    - Value check: View > Value shows the image in grayscale (perceptual
+      lightness) with Tones posterize (2-5). Value strip in the panel sorts
+      the palette dark to light with gray equivalents and warns when two
+      colors read the same in grayscale. Shortcut V.
+  v0.10.2 (2026-09-23)
+    - PNG card: "Include image" checkbox (+ Original / Blocks). It turns itself
+      on when the palette came from the loaded image and off when it came from
+      History or a link, with a note saying why. Manual override stays.
+    - "Widths by coverage" is disabled (with the reason) when some colors have
+      no coverage (manual pins, History, link).
+    - Copy image is now the main card action. New "Copy card" button in the
+      palette panel and shortcut C copy the card straight to the clipboard with
+      the last card settings (falls back to a PNG download if the browser
+      blocks image copy).
+  v0.10.1 (2026-09-23)
+    - Share links always use the public site (kumodot.github.io/Chromadrop),
+      even when the app runs from the local file, so they work for anyone.
+      Links are no longer skipped in Markdown / Slack / text when local.
+    - Removed the "Swatch images" Markdown option (third-party image service).
+    - Clearer Cinema 4D option names: "This scene only" / "All scenes".
+  v0.10 (2026-09-23)
+    - Modules: workspace tabs in the header (Image for now) with enter/leave
+      hooks. Settings > Modules turns modules on/off (saved in the browser).
+    - History: palette library in a drawer over the stage (H). Save by dragging
+      "Save" onto it or clicking it, name prompt, then load / add / rename /
+      delete / drag to reorder. Sort: manual, newest, oldest, name, color.
+      Only colors + names are stored (localStorage), never the image.
+      Export / import as .json for backup or another computer.
+    - Share split in categories: Image (PNG card, default) | Text (Markdown,
+      Slack, plain, link) | Apps (Cinema 4D, ASE, GPL, JSON, CSS). The file
+      buttons left the palette panel.
+    - ACEScg values (AP1 linear, Bradford D65->D60) per color, in Copy all,
+      JSON, share text and card labels. Toggle in Settings.
+  v0.9 (2026-09-18)
+    - Share > C4D tab: generates a Python script that adds the palette as a
+      swatch group in Cinema 4D's Color Chooser (Document or Global).
+      Verified on C4D 2025.3: ColorSwatchGroup.AddColor takes c4d.Vector4d
+      with sRGB 0-1 values (not maxon.ColorA, not linear). Copy or .py download.
+  v0.8 (2026-09-18)
+    - Fix: deleted auto colors came back when a pin was moved or a slider
+      changed (both re-run extraction). Deleted auto colors are now remembered
+      and skipped. The Extract button (or E) does a fresh extract and brings
+      them back. New image or "✕ All" also resets.
+  v0.7 (2026-09-18)
+    - GitHub Pages release: social preview tags (Open Graph / Twitter card),
+      meta description, favicon.
+    - Share links point to the site root (index.html), so they keep working
+      after future version bumps.
+  v0.6 (2026-09-18)
+    - Share and PNG card merged into one Share window with tabs:
+      PNG card (default) | Markdown | Slack | Plain text | Link.
+      One "Palette name" field drives the card title and the text formats.
+  v0.5 (2026-09-18)
+    - Auto color names: nearest match in OKLab against ~1150 short, single-word,
+      no-accent names (xkcd color survey CC0 + color-name-list "short" MIT,
+      filtered). Names are unique inside the palette. Editing a name locks it;
+      clear it to get an auto name back. "Auto-name" button renames everything.
+    - "Remove similar" checkbox + ΔE slider replaces Merge ΔE: drops auto colors
+      too close to each other or to your pins. Placing/moving a pin re-checks.
+  v0.4 (2026-09-18)
+    - Share panel: Markdown table (GitHub/Notion), Slack message, plain text,
+      .md download, and a share link that opens the palette in Chromadrop.
+    - Shared palettes load from the link (#p=...) and are kept when you load
+      an image, so the receiver can see their image in Blocks view with it.
+    - PNG card: optional color names + numbers, shared palette title.
+  v0.3 (2026-09-18)
+    - Auto markers and manual pins unified: auto extract now places numbered
+      pins at each detected color. Every pin can be dragged.
+    - Pin numbers follow palette order (reorder list = renumber pins).
+    - Click a pin or row to select it; Delete/Backspace removes it, Esc deselects.
+    - Click on empty image area drops a new pin. Right-click still deletes.
+    - Dragging an auto pin turns it into a manual one (kept on re-extract).
+    - Re-extract skips auto colors already covered by a manual pin.
+  v0.2 (2026-09-18)
+    - Renamed KumoPalette -> Chromadrop.
+  v0.1 (2026-09-18)
+    - First test version.
+    - Auto extraction: weighted k-means in CIELAB over a 15-bit histogram,
+      ΔE merge, min coverage filter, "snap to flat color" option.
+    - Pins: click to drop, drag to move, right-click to delete, sample radius.
+    - Loupe magnifier while hovering the image.
+    - Per-swatch copy: HEX, RGB 0-255, sRGB 0-1, Linear 0-1, HSV.
+    - Copy styles: plain, Python tuple, VEX, c4d.Vector, GLSL.
+    - Copy-all + exports: PNG palette card, ASE, GPL, JSON, CSS.
+    - Blocks view: live palette-quantized image (nearest color in CIELAB),
+      mosaic block size, majority-filter cleanup, PNG export. Sliders are live.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Chromadrop · image palette extractor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chromadrop v0.12.2 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -19,10 +168,2683 @@
 <meta name="twitter:description" content="Pull palettes from any image. Copy values straight into your 3D app.">
 <meta name="twitter:image" content="https://kumodot.github.io/Chromadrop/og-image.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<!-- Always open the latest version, keeping any shared palette in the #hash -->
-<script>location.replace("Chromadrop_v0.12.1.html" + location.hash);</script>
-<noscript><meta http-equiv="refresh" content="0; url=Chromadrop_v0.12.1.html"></noscript>
-<style>body{background:#141518;color:#e8e6e1;font:14px system-ui;display:grid;place-items:center;height:100vh;margin:0}a{color:#e0a33a}</style>
+<style>
+:root{
+  --bg:#141518; --bg2:#1b1d21; --bg3:#23262b; --line:#2f333a;
+  --fg:#e8e6e1; --fg2:#a4a7ad; --fg3:#6d7178;
+  --accent:#e0a33a; --accent2:#f0bd62; --danger:#e0564a;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --r:8px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.4 var(--sans)}
+button,select,input{font:inherit;color:inherit}
+button{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button:hover{border-color:var(--fg3)}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1a1307;font-weight:600}
+button.primary:hover{background:var(--accent2)}
+button.ghost{background:transparent;border-color:transparent;color:var(--fg2)}
+button.ghost:hover{color:var(--fg);border-color:var(--line)}
+button.ghost.on{color:var(--accent);border-color:var(--accent);background:#2a2415}
+select,input[type=text],input[type=number]{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+input[type=range]{accent-color:var(--accent);width:90px;vertical-align:middle}
+input[type=checkbox]{accent-color:var(--accent);vertical-align:middle}
+label{color:var(--fg2);white-space:nowrap}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+header.top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.brand{font-weight:700;font-size:16px;letter-spacing:.2px}
+.brand .dot{color:var(--accent)}
+.ver{font:600 11px var(--mono);color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:2px}
+header .spacer{flex:1}
+main{display:grid;grid-template-columns:1fr 500px;min-height:0}
+.stage-wrap{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);overflow:hidden;min-width:0;min-height:0;border-right:1px solid var(--line)}
+.toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--bg2)}
+.toolbar .grp{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.toolbar .sep{width:1px;height:22px;background:var(--line)}
+.toolbar .num{font:12px var(--mono);color:var(--fg);min-width:26px;display:inline-block}
+.gtitle{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3)}
+#stage{position:relative;overflow:hidden;min-height:0;
+  background:
+    linear-gradient(45deg,#18191c 25%,transparent 25%,transparent 75%,#18191c 75%) 0 0/20px 20px,
+    linear-gradient(45deg,#18191c 25%,transparent 25%,transparent 75%,#18191c 75%) 10px 10px/20px 20px,#1d1f23}
+#drop{position:absolute;inset:24px;border:2px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--fg2);text-align:center}
+#drop b,#scDrop b{color:var(--fg);font-size:16px}
+#scDrop{position:absolute;inset:24px;border:2px dashed var(--line);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--fg2);text-align:center}
+#scStage.dragover #scDrop{border-color:var(--accent);color:var(--fg)}
+#modVideo{grid-template-rows:auto 1fr auto auto}
+.stage-foot{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 12px;border-top:1px solid var(--line);background:var(--bg2)}
+.stage-foot .spacer{flex:1}
+.stage-foot .d{color:var(--fg3);font-size:12px}
+.stage-foot button:disabled{opacity:.45;cursor:default}
+#scStage{position:relative;overflow:hidden;min-height:0;background:#1d1f23}
+#scScroll{position:absolute;inset:0;overflow:auto;padding:16px 18px 24px}
+.schead{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;margin-bottom:14px}
+.schead b{font-size:15px}
+.schead .d{color:var(--fg2);font:12px var(--mono)}
+.scseq{display:flex;flex:1 1 320px;min-width:240px;height:28px;border-radius:6px;overflow:hidden}
+.scseq i{flex:1;cursor:copy}
+.scsheet{display:grid;gap:12px}
+.scf{background:var(--bg2);border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative}
+.scf img{display:block;width:100%}
+.scchips{display:flex;height:16px}
+.scchips i{display:block;height:100%;cursor:copy}
+.scmeta{display:flex;justify-content:space-between;gap:8px;padding:4px 8px;font:11px var(--mono);color:var(--fg2);white-space:nowrap;overflow:hidden}
+.scact{position:absolute;top:6px;right:6px;display:none;gap:4px}
+.scf:hover .scact{display:flex}
+.scact button{padding:3px 7px;font-size:11px;background:rgba(20,21,24,.88)}
+#scCanvas{display:block;width:100%;height:auto;border-radius:8px;cursor:pointer}
+#scScriptWrap{position:relative}
+#scTip{position:absolute;pointer-events:none;background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:4px;display:none;z-index:4;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+#scTip img{display:block;width:220px;border-radius:4px}
+#scTip span{display:block;font:11px var(--mono);color:var(--fg2);padding:3px 2px 0}
+#scProg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:16px 20px;display:none;min-width:320px;z-index:6;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#scProg .bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden;margin:10px 0 12px}
+#scProg .bar i{display:block;height:100%;background:var(--accent);width:0}
+#stage.dragover #drop{border-color:var(--accent);color:var(--fg)}
+#imgBox{position:absolute;display:none;cursor:crosshair;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+#imgBox img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
+#markers{position:absolute;inset:0}
+#blockCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:none;pointer-events:none}
+#imgBox.blocks #blockCanvas,#imgBox.value #blockCanvas{display:block}
+#imgBox.value #blockCanvas{image-rendering:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{border:0;border-radius:0;background:var(--bg3);padding:5px 10px}
+.seg button.on{background:var(--accent);color:#1a1307;font-weight:600}
+.toolbar .grp.dim{opacity:.4;pointer-events:none}
+.pin{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;font:700 10px var(--sans);cursor:grab;touch-action:none}
+.pin:active{cursor:grabbing}
+.pin.auto{border-style:dashed}
+.pin.hl{outline:2px solid var(--accent);outline-offset:2px}
+.pin.sel{outline:3px solid var(--accent);outline-offset:3px;transform:scale(1.2);z-index:2}
+#markers.hidden .pin{display:none}
+.nbadge{font:700 10px var(--mono);min-width:20px;height:18px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;background:var(--bg3);color:var(--fg)}
+.row.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+#loupe{position:absolute;pointer-events:none;display:none;width:120px;height:140px;border-radius:10px;overflow:hidden;border:1px solid #000;box-shadow:0 6px 20px rgba(0,0,0,.6);background:#000}
+.hint{padding:6px 14px;color:var(--fg3);font-size:12px;border-top:1px solid var(--line);background:var(--bg2);display:flex;gap:16px;flex-wrap:wrap}
+.hint a{color:var(--fg3)}
+.hint .grow{flex:1}
+aside.panel{display:grid;grid-template-rows:auto 1fr auto auto auto;min-height:0;background:var(--bg2)}
+.rhead .hx{padding:0 6px;line-height:18px;background:transparent;border-color:transparent;color:var(--fg3)}
+.rhead .hx:hover,.row.harmbase .hx{color:var(--accent);border-color:var(--line)}
+.row.harmbase{border-color:var(--accent)}
+.psec{border-top:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.psec[hidden]{display:none}
+.psec-head{display:flex;align-items:center;gap:8px}
+.psec-head b{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--fg2)}
+.psec-head .spacer{flex:1}
+.psec-head .basechip{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.psec-head .ghost{padding:2px 8px;font-size:12px}
+.hrow{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:8px}
+.hrow .lbl{font-size:11px;color:var(--fg3)}
+.hsw{display:flex;gap:4px}
+.hsw button{flex:1;height:30px;border-radius:5px;border:0;padding:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);cursor:copy;position:relative}
+.hsw button:hover{outline:2px solid var(--accent);outline-offset:1px}
+.hsw button::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;opacity:0;color:#fff;text-shadow:0 1px 2px #000}
+.hsw button:hover::after{opacity:1}
+.vstrip{display:flex;border-radius:6px;overflow:hidden}
+.vstrip div{flex:1;display:flex;flex-direction:column;min-width:0}
+.vstrip i{height:22px;display:block}
+.vstrip span{font:9px var(--mono);color:var(--fg3);text-align:center;padding-top:2px;white-space:nowrap;overflow:hidden}
+.vwarn{font-size:11px;color:#e8b04a}
+.vok{font-size:11px;color:var(--fg3)}
+.panel-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.panel-head h2{margin:0;font-size:14px}
+.panel-head .count{color:var(--fg3);font:12px var(--mono)}
+.panel-head .spacer{flex:1}
+#list{overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
+.empty-list{color:var(--fg3);text-align:center;padding:40px 20px}
+.row{display:grid;grid-template-columns:56px 1fr;gap:10px;padding:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg)}
+.row.hl{border-color:var(--accent)}
+.row.dragging{opacity:.4}
+.row.dropabove{box-shadow:0 -2px 0 var(--accent)}
+.chip{border-radius:6px;min-height:56px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);position:relative}
+.chip:hover::after{content:"copy hex";position:absolute;inset:auto 0 3px 0;text-align:center;font:600 9px var(--sans);color:#fff;text-shadow:0 1px 2px #000}
+.rhead{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.rhead .grip{cursor:grab;color:var(--fg3);user-select:none;padding:0 2px}
+.rhead input.name{flex:1;min-width:0;background:transparent;border:1px solid transparent;padding:2px 4px;border-radius:4px}
+.rhead input.name:hover,.rhead input.name:focus{border-color:var(--line);background:var(--bg3);outline:none}
+.tag{font:600 10px var(--mono);padding:1px 6px;border-radius:10px;background:var(--bg3);color:var(--fg2);white-space:nowrap}
+.tag.tpin{color:#1a1307;background:var(--accent)}
+.rhead .x{padding:0 6px;line-height:18px;background:transparent;border-color:transparent;color:var(--fg3)}
+.rhead .x:hover{color:var(--danger);border-color:var(--line)}
+.vals{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.val{display:flex;gap:4px;align-items:baseline;text-align:left;padding:3px 5px;border-radius:5px;background:var(--bg2);border:1px solid transparent;min-width:0}
+.val:hover{border-color:var(--accent)}
+.val .k{font:700 9px var(--sans);color:var(--fg3);letter-spacing:.3px;min-width:40px}
+.val .v{font:11.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.val.copied{border-color:var(--accent);background:#2a2415}
+aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
+.clearwrap{position:relative}
+.clearmenu{position:fixed;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:4px;display:flex;flex-direction:column;min-width:230px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:10}
+.clearmenu[hidden]{display:none}
+.clearmenu button{background:transparent;border:0;text-align:left;padding:7px 10px;display:grid;grid-template-columns:1fr auto;gap:0 8px}
+.clearmenu button:hover:not(:disabled){background:var(--bg2)}
+.clearmenu button:disabled{opacity:.35;cursor:default}
+.clearmenu button b{font:600 11px var(--mono);color:var(--fg3)}
+.clearmenu button small{grid-column:1/-1;font-size:10px;color:var(--fg3)}
+.clearmenu button.danger{color:var(--danger)}
+.panel-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.panel-foot .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.panel-foot .line .spacer{flex:1}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;transition:.18s;background:#000d;border:1px solid var(--line);padding:8px 14px;border-radius:20px;pointer-events:none;font:12px var(--mono);z-index:50}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+.modal.open{display:flex}
+.dlg{background:var(--bg2);border:1px solid var(--line);border-radius:12px;max-width:100%;max-height:100%;overflow:auto;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.dlg header{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.dlg header h3{margin:0;font-size:15px;flex:1}
+.dlg .body{padding:16px}
+.about{width:440px}
+.about .big{font-size:22px;font-weight:800}
+.about p{color:var(--fg2)}
+.about a{color:var(--accent)}
+.about .credit{font:13px var(--mono);color:var(--fg);background:var(--bg);padding:10px;border-radius:8px;border:1px solid var(--line)}
+.kofi{display:inline-block;margin-top:6px;background:var(--accent);color:#1a1307 !important;text-decoration:none;font-weight:700;padding:8px 14px;border-radius:8px}
+.cardlg{width:min(1100px,100%)}
+.sharedlg{width:min(1100px,100%)}
+.sharetop{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.sharetop .tabs{margin:0}
+.sharetop .spacer{flex:1}
+.pane.on{display:block}
+.pane:not(.on){display:none !important}
+.pane.cardgrid.on{display:grid}
+.tabs{display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap}
+.tabs button.on{background:var(--accent);border-color:var(--accent);color:#1a1307;font-weight:600}
+.shareopts{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+#shareText{width:100%;height:320px;resize:vertical;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:10px;font:12px/1.5 var(--mono);white-space:pre}
+.sharefoot{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.sharefoot .note{color:var(--fg3);font-size:12px;flex:1}
+.cardgrid{display:grid;grid-template-columns:230px 1fr;gap:16px}
+.cardopts{display:flex;flex-direction:column;gap:10px}
+.cardopts label{display:flex;flex-direction:column;gap:4px}
+.cardopts label.chk{flex-direction:row;align-items:center;gap:6px}
+.cardopts label.off{opacity:.45}
+.cnote{font-size:11px;color:var(--fg3);margin-top:-4px}
+.cnote:empty{display:none}
+.cextras{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+.csub{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--fg3)}
+.cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
+.cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
+/* modules */
+.modtabs{display:flex;gap:2px;margin-left:10px}
+.modtabs button{background:transparent;border:1px solid transparent;color:var(--fg2);padding:5px 12px;border-radius:6px}
+.modtabs button.on{background:var(--bg3);border-color:var(--line);color:var(--fg);font-weight:600}
+.module[hidden]{display:none !important}
+/* history drawer */
+.stagebox .history{position:absolute;top:0;right:0;bottom:0;width:320px;background:var(--bg2);border-left:1px solid var(--line);box-shadow:-10px 0 30px rgba(0,0,0,.45);display:grid;grid-template-rows:auto auto 1fr auto;transform:translateX(100%);transition:transform .2s ease;z-index:5}
+.stagebox .history.open{transform:none}
+.hist-handle{position:absolute;left:-30px;top:50%;transform:translateY(-50%);width:30px;padding:10px 0;border-radius:8px 0 0 8px;border:1px solid var(--line);border-right:0;background:var(--bg2);display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:-4px 0 12px rgba(0,0,0,.35)}
+.hist-handle span{writing-mode:vertical-rl;transform:rotate(180deg);font:700 11px var(--sans);letter-spacing:1px;text-transform:uppercase;color:var(--fg2)}
+.hist-handle b{font:600 10px var(--mono);color:var(--accent)}
+.hist-handle.drop,.history.dropping .hist-handle{border-color:var(--accent)}
+.hist-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.hist-head b{flex:1}
+.hist-drop{margin:10px 12px 4px;padding:12px;border:2px dashed var(--line);border-radius:10px;color:var(--fg3);text-align:center;font-size:12px}
+.history.dropping .hist-drop{border-color:var(--accent);color:var(--fg);background:#2a2415}
+.hist-list{overflow:auto;padding:6px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.hist-empty{color:var(--fg3);text-align:center;padding:30px 10px;font-size:12px}
+.hcard{border:1px solid var(--line);border-radius:10px;background:var(--bg);padding:8px;display:flex;flex-direction:column;gap:6px}
+.hcard[draggable=true]{cursor:grab}
+.hcard.dragging{opacity:.4}
+.hcard.dropabove{box-shadow:0 -2px 0 var(--accent)}
+.hcard.flash{border-color:var(--accent)}
+.hstrip{display:flex;height:30px;border-radius:6px;overflow:hidden}
+.hstrip i{flex:1;cursor:copy}
+.hmeta{display:flex;align-items:baseline;gap:6px;min-width:0}
+.hname{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hmeta input{flex:1;min-width:0;padding:2px 5px}
+.hdate{font:10px var(--mono);color:var(--fg3);white-space:nowrap}
+.hact{display:flex;gap:4px}
+.hact button{padding:3px 8px;font-size:12px}
+.hact button[data-act=load]{flex:1}
+.hact button.sure{background:var(--danger);border-color:var(--danger);color:#fff}
+.hist-foot{display:flex;align-items:center;gap:4px;padding:8px 12px;border-top:1px solid var(--line);font-size:11px;color:var(--fg3)}
+.hist-foot .spacer{flex:1}
+#btnSavePal{padding:4px 10px;cursor:grab}
+.namedlg{width:420px}
+.namedlg label{display:flex;flex-direction:column;gap:6px}
+.swprev{display:flex;height:34px;border-radius:6px;overflow:hidden;margin-top:12px}
+.swprev i{flex:1}
+.setdlg{width:460px}
+.mrow{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:10px;margin-bottom:8px}
+.mrow .swprev{margin-top:0;height:28px}
+.mlbl{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.6px}
+.mbtns{display:flex;gap:8px;margin-top:12px}
+.mbtns button{flex:1;white-space:nowrap}
+#mergeModal .namedlg{width:520px}
+.setdlg h4{margin:4px 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3)}
+.modrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--bg)}
+.modrow .d{color:var(--fg3);font-size:12px}
+.modrow .grow{flex:1}
+.setnote{color:var(--fg3);font-size:12px;margin:4px 0 16px}
+.subtabs{margin:-2px 0 12px}
+.subtabs button{padding:4px 10px;font-size:12px}
+.subtabs:empty{display:none}
+.cats button{padding:7px 16px;font-weight:600}
+@media (max-width:900px){main{grid-template-columns:1fr;grid-template-rows:55vh auto}.stage-wrap{border-right:0}.cardgrid{grid-template-columns:1fr}}
+</style>
 </head>
-<body><a href="Chromadrop_v0.12.1.html">Open Chromadrop v0.12.1</a></body>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.2</span></div>
+    <nav class="modtabs" id="modTabs"></nav>
+    <div class="spacer"></div>
+    <button id="btnOpen" class="primary">Open image</button>
+    <input type="file" id="file" accept="image/*" hidden>
+    <button id="btnSettings" class="ghost">Settings</button>
+    <button id="btnAbout" class="ghost">About</button>
+  </header>
+
+  <main>
+    <section class="stage-wrap module" id="modImage">
+      <div class="toolbar">
+        <div class="grp">
+          <span class="gtitle">Auto</span>
+          <label title="Max number of clusters">Colors <input type="range" id="kCount" min="2" max="16" value="10"> <span class="num" id="kCountV">10</span></label>
+          <label title="Drop auto colors that are too close to another palette color (ΔE = perceptual distance). Your own pins are never removed."><input type="checkbox" id="dedupe" checked> Remove similar</label>
+          <label title="How close counts as similar (ΔE). Higher = fewer, more distinct colors.">ΔE <input type="range" id="mergeDE" min="2" max="40" value="12"> <span class="num" id="mergeDEV">12</span></label>
+          <label title="Drop colors covering less than this % of the image (kills anti-aliasing edges)">Min % <input type="range" id="minPct" min="0" max="5" step="0.1" value="2"> <span class="num" id="minPctV">2</span></label>
+          <label title="Use the most frequent exact color of each cluster instead of the average. Best for flat art."><input type="checkbox" id="snap" checked> Snap to flat</label>
+          <button id="btnExtract" class="primary" title="Fresh extract from the image: brings back auto colors you deleted and removes colors loaded from the Library, links or Harmonies (pins you placed on the image stay). Shortcut: E">Extract</button>
+        </div>
+        <div class="sep"></div>
+        <div class="grp">
+          <span class="gtitle">Pins</span>
+          <label>Radius
+            <select id="radius">
+              <option value="0">1 px</option>
+              <option value="1" selected>3 px</option>
+              <option value="2">5 px</option>
+              <option value="4">9 px</option>
+              <option value="7">15 px</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="showMarkers" checked> Show pins</label>
+          <label><input type="checkbox" id="showLoupe" checked> Loupe</label>
+        </div>
+        <div class="sep"></div>
+        <div class="grp">
+          <span class="gtitle">View</span>
+          <div class="seg"><button id="vOrig" class="on">Original</button><button id="vBlocks" title="Shortcut: B">Blocks</button><button id="vValue" title="Grayscale value check. Shortcut: V">Value</button></div>
+        </div>
+        <div class="grp dim" id="valueOpts" style="display:none">
+          <label title="Posterize the grayscale into a few value groups to read the composition">Tones
+            <select id="valTones"><option value="0">Smooth</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+          </label>
+        </div>
+        <div class="grp dim" id="blockOpts">
+          <label title="Mosaic cell size">Block <input type="range" id="blockSize" min="1" max="48" value="1"> <span class="num" id="blockSizeV">1</span></label>
+          <label title="Majority filter passes: removes small specks, grows big blobs">Cleanup <input type="range" id="cleanup" min="0" max="12" value="0"> <span class="num" id="cleanupV">0</span></label>
+          <button id="btnBlocksPng" title="Save the blocks view as PNG at image resolution">PNG</button>
+        </div>
+      </div>
+      <div id="stage" class="stagebox">
+        <div id="drop">
+          <b>Drop an image here</b>
+          <span>or paste with Ctrl+V, or use Open image</span>
+        </div>
+        <div id="imgBox"><img id="img" alt=""><canvas id="blockCanvas"></canvas><div id="markers"></div></div>
+        <canvas id="loupe" width="120" height="140"></canvas>
+        <aside class="history" id="history">
+          <button class="hist-handle" id="histHandle" title="Library (L)"><span>Library</span><b id="histCount">0</b></button>
+          <div class="hist-head">
+            <b>Library</b>
+            <select id="histSort" title="Sort">
+              <option value="manual">Manual</option>
+              <option value="new">Newest</option>
+              <option value="old">Oldest</option>
+              <option value="name">Name</option>
+              <option value="hue">Color</option>
+            </select>
+            <button class="ghost" id="histClose" title="Close (H)">✕</button>
+          </div>
+          <div class="hist-drop" id="histDrop">Drag <b>Save</b> from the palette here<br>or <button id="histSaveBtn">Save current palette</button></div>
+          <div class="hist-list" id="histList"></div>
+          <div class="hist-foot">
+            <span title="Stored in this browser's local storage. Use Export to back it up.">Saved in this browser</span>
+            <span class="spacer"></span>
+            <button class="ghost" id="histExport" title="Download the whole library as .json">Export</button>
+            <button class="ghost" id="histImport" title="Import a library or a palette .json">Import</button>
+            <input type="file" id="histFile" accept=".json,application/json" hidden>
+          </div>
+        </aside>
+      </div>
+      <div class="hint">
+        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>L: library</span><span>C: copy card</span><span>V: value</span>
+        <span class="grow"></span>
+        <a href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a>
+      </div>
+    </section>
+
+    <section class="stage-wrap module" id="modVideo" hidden>
+      <div class="toolbar">
+        <div class="grp">
+          <span class="gtitle">Sample</span>
+          <label title="How many frames to sample, evenly spread over the video (or the image sequence)">Frames <input type="range" id="scCount" min="8" max="240" step="4" value="60"> <span class="num" id="scCountV">60</span></label>
+          <label title="Colors kept per frame">Colors <input type="range" id="scK" min="2" max="8" value="5"> <span class="num" id="scKV">5</span></label>
+          <button id="scRun" class="primary" title="Sample the frames again with these settings">Analyze</button>
+        </div>
+        <div class="sep"></div>
+        <div class="grp">
+          <span class="seg"><button id="scVSheet" class="on">Contact sheet</button><button id="scVScript">Color script</button></span>
+        </div>
+        <div class="grp" id="scSheetOpts">
+          <label>Columns <input type="range" id="scCols" min="2" max="12" value="6"> <span class="num" id="scColsV">6</span></label>
+        </div>
+        <div class="grp" id="scScriptOpts" style="display:none">
+          <label>Style <select id="scStyle">
+            <option value="bands">Palette bands</option>
+            <option value="barcode">Barcode</option>
+            <option value="average">Average</option>
+          </select></label>
+        </div>
+        <div class="sep"></div>
+        <div class="grp">
+          <span class="gtitle">Palette</span>
+          <label title="How many colors to keep for the whole sequence">Colors <input type="range" id="scPalN" min="3" max="16" value="8"> <span class="num" id="scPalNV">8</span></label>
+          <button id="scUse" title="Send the sequence palette (all sampled frames combined) to the Palette panel">Use sequence palette</button>
+        </div>
+      </div>
+      <div id="scStage" class="stagebox">
+        <div id="scDrop">
+          <b>Drop a video or a set of frames here</b>
+          <span>MP4 / WebM (whatever your browser plays), or several images sorted by name.<br>Or use Open video / frames.</span>
+        </div>
+        <div id="scScroll" style="display:none">
+          <div class="schead">
+            <b id="scName"></b><span class="d" id="scInfo"></span>
+            <div class="scseq" id="scSeq" title="Sequence palette (click a color to copy its HEX)"></div>
+          </div>
+          <div class="scsheet" id="scSheet"></div>
+          <div id="scScriptWrap" style="display:none"><canvas id="scCanvas"></canvas><div id="scTip"><img alt=""><span></span></div></div>
+        </div>
+        <div id="scProg"><b id="scProgT">Sampling…</b><div class="bar"><i></i></div><button id="scCancel">Cancel</button></div>
+        <input type="file" id="scFile" accept="video/*,image/*" multiple hidden>
+      </div>
+      <div class="stage-foot">
+        <button id="scCopy" class="primary" title="Copy the current view (contact sheet or color script) to the clipboard as an image">⧉ Copy image</button>
+        <button id="scDl" title="Download the current view as a PNG file">Download PNG</button>
+        <select id="scTheme" title="Background of the exported image"><option value="dark">Dark</option><option value="light">Light</option></select>
+        <span class="spacer"></span>
+        <span class="d" id="scExpNote"></span>
+      </div>
+      <div class="hint">
+        <span>Drop a video or frames</span><span>Hover a frame: → Image / + Colors</span><span>Click the color script: open that frame</span><span>Click a chip: copy HEX</span><span>L: library</span><span>C: copy card</span>
+        <span class="grow"></span>
+        <a href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a>
+      </div>
+    </section>
+
+    <aside class="panel">
+      <div class="panel-head">
+        <h2>Palette</h2><span class="count" id="count">0</span>
+        <button id="btnSavePal" draggable="true" title="Save to the Library: click, or drag onto the Library tab">★ Save</button>
+        <span class="spacer"></span>
+        <label title="How RGB / 0-1 values are wrapped when copied">Copy as
+          <select id="copyStyle">
+            <option value="plain">0.1, 0.2, 0.3</option>
+            <option value="py">(0.1, 0.2, 0.3)</option>
+            <option value="vex">{0.1, 0.2, 0.3}</option>
+            <option value="c4d">c4d.Vector()</option>
+            <option value="glsl">vec3()</option>
+          </select>
+        </label>
+        <label title="Decimals for 0-1 values">Dec
+          <select id="decimals"><option>2</option><option selected>3</option><option>4</option><option>6</option></select>
+        </label>
+      </div>
+      <div id="list"><div class="empty-list">No colors yet.<br>Load an image, hit Extract or click to drop pins.</div></div>
+      <div class="psec" id="harmSec" hidden>
+        <div class="psec-head"><b>Harmonies</b><span class="basechip" id="harmChip"></span><span id="harmBase" style="font-size:12px"></span><span class="spacer"></span>
+          <button class="ghost" id="harmWhole" title="Suggestions that fit the whole palette">Whole palette</button>
+          <button class="ghost" id="harmClose" title="Close">✕</button></div>
+        <div id="harmRows"></div>
+      </div>
+      <div class="psec" id="valSec" hidden>
+        <div class="psec-head"><b>Values</b><span style="font-size:11px;color:var(--fg3)">dark → light</span><span class="spacer"></span><button class="ghost" id="valClose" title="Close">✕</button></div>
+        <div class="vstrip" id="vStrip"></div>
+        <div id="vMsg"></div>
+      </div>
+      <div class="panel-foot">
+        <div class="line">
+          <select id="copyAllFmt" style="flex:1">
+            <option value="hex">HEX list</option>
+            <option value="rgb">RGB 0-255 list</option>
+            <option value="srgb">sRGB 0-1 list</option>
+            <option value="lin">Linear 0-1 list</option>
+            <option value="aces">ACEScg 0-1 list</option>
+            <option value="pyLin">Python list (linear)</option>
+            <option value="vexLin">VEX vector[] (linear)</option>
+            <option value="pyAces">Python list (ACEScg)</option>
+            <option value="vexAces">VEX vector[] (ACEScg)</option>
+            <option value="css">CSS variables</option>
+            <option value="json">JSON</option>
+          </select>
+          <button id="btnCopyAll">Copy all</button>
+          <button id="btnQuickCard" title="Copy the palette card as an image to the clipboard (C)">⧉ Copy card</button>
+        </div>
+        <div class="line">
+          <button id="btnShare" class="primary" title="Image, Text and Apps exports">Share / Export…</button>
+          <span class="spacer"></span>
+          <button id="btnHarm" class="ghost" title="Harmonies for the whole palette (or click ✦ on a color)">✦ Harmonies</button>
+          <button id="btnValues" class="ghost" title="Show the palette sorted by value (lightness) with gray equivalents">◐ Values</button>
+          <button id="btnAutoName" class="ghost" title="Replace every name with an auto name">Auto-name</button>
+          <span class="clearwrap">
+            <button id="btnClear" class="ghost" title="Remove groups of colors">Clear ▾</button>
+            <div class="clearmenu" id="clearMenu" hidden>
+              <button data-clear="auto">Auto colors <b></b></button>
+              <button data-clear="pins">Pins you placed <b></b></button>
+              <button data-clear="loaded">Loaded &amp; generated <b></b><small>Library, link, Harmonies</small></button>
+              <button data-clear="all" class="danger">Everything <b></b></button>
+            </div>
+          </span>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- About -->
+<div class="modal" id="aboutModal">
+  <div class="dlg about">
+    <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
+      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.12.2</div>
+      <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
+      <div class="credit" id="creditLine"></div>
+      <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
+      <p style="font-size:11px;color:var(--fg3)">Color names: <a href="https://xkcd.com/color/rgb/" target="_blank" rel="noopener">xkcd color survey</a> (CC0) and <a href="https://github.com/meodai/color-names" target="_blank" rel="noopener">color-name-list</a> © 2017 David Aerne (MIT), filtered.</p>
+      <p style="font-size:12px">Instagram <a href="https://instagram.com/msouza3d" target="_blank" rel="noopener">@msouza3d</a> · GitHub <a href="https://github.com/kumodot" target="_blank" rel="noopener">kumodot</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- Share: PNG card + text formats -->
+<div class="modal" id="shareModal">
+  <div class="dlg sharedlg">
+    <header><h3>Share palette</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <div class="sharetop">
+        <div class="tabs cats" id="shareCats">
+          <button data-cat="image" class="on">Image</button>
+          <button data-cat="text">Text</button>
+          <button data-cat="apps">Apps</button>
+        </div>
+        <span class="spacer"></span>
+        <label>Palette name <input type="text" id="sTitle" style="width:220px"></label>
+      </div>
+      <div class="tabs subtabs" id="shareTabs"></div>
+
+      <div class="pane cardgrid on" id="paneCard">
+      <div class="cardopts">
+        <label>Layout
+          <select id="cLayout"><option value="strip">Strip</option><option value="grid">Grid cards</option></select>
+        </label>
+        <label>Labels
+          <select id="cLabels"><option value="hex">HEX</option><option value="hexrgb" selected>HEX + RGB</option><option value="hexlin">HEX + Linear</option><option value="hexaces">HEX + ACEScg</option><option value="none">None</option></select>
+        </label>
+        <label>Theme
+          <select id="cTheme"><option value="dark">Dark</option><option value="light">Light</option></select>
+        </label>
+        <label class="chk"><input type="checkbox" id="cImgOn" checked> Include image</label>
+        <label id="cImgModeWrap">Image style
+          <select id="cImgMode"><option value="orig">Original</option><option value="blocks">Blocks</option></select>
+        </label>
+        <div class="cnote" id="cImgNote"></div>
+        <label class="chk"><input type="checkbox" id="cNames" checked> Names + numbers</label>
+        <label class="chk" id="cPropWrap"><input type="checkbox" id="cProp"> Widths by coverage</label>
+        <div class="cextras">
+          <div class="csub">Extras</div>
+          <label class="chk" id="cHarmWrap"><input type="checkbox" id="cHarm"> <span id="cHarmLbl">Harmonies</span></label>
+          <label class="chk" id="cValsWrap"><input type="checkbox" id="cVals"> Values</label>
+          <div class="cnote" id="cExtrasNote"></div>
+        </div>
+        <label class="chk"><input type="checkbox" id="cCredit" checked> Credit footer</label>
+        <button id="btnCardCopy" class="primary" title="Copy the card as an image (paste in Slack, Teams, Figma...). Shortcut on the main screen: C">Copy image</button>
+        <button id="btnCardDl">Download PNG</button>
+      </div>
+      <div class="cardprev"><canvas id="cardCanvas"></canvas></div>
+      </div>
+
+      <div class="pane" id="paneText">
+        <div class="shareopts" id="c4dOpts" style="display:none">
+          <label title="This scene only: swatches are saved inside the .c4d and travel with the file. All scenes: saved in your Cinema 4D preferences, available in every scene on this computer (not inside the file).">Add swatches to
+            <select id="c4dCat"><option value="doc">This scene only (saved in the .c4d)</option><option value="global">All scenes on this computer</option></select>
+          </label>
+          <label><input type="checkbox" id="c4dNames" checked> Color names as comments</label>
+        </div>
+        <div class="shareopts" id="textOpts">
+          <label><input type="checkbox" id="sRGB" checked> RGB</label>
+          <label><input type="checkbox" id="sSRGB"> sRGB 0-1</label>
+          <label><input type="checkbox" id="sLin" checked> Linear 0-1</label>
+          <label title="ACEScg (AP1) linear, for raw values in an ACES pipeline"><input type="checkbox" id="sAces"> ACEScg</label>
+          <label><input type="checkbox" id="sHSV"> HSV</label>
+          <label><input type="checkbox" id="sLink" checked> Include link</label>
+        </div>
+        <textarea id="shareText" readonly spellcheck="false"></textarea>
+        <div class="sharefoot">
+          <span class="note" id="shareNote"></span>
+          <button id="btnShareDl">Download</button>
+          <button id="btnShareCopy" class="primary">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Library drop: replace or merge -->
+<div class="modal" id="mergeModal">
+  <div class="dlg namedlg">
+    <header><h3 id="mergeTitle">Load palette</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <div class="mrow"><span class="mlbl">Current</span><div class="swprev" id="mergeCur"></div></div>
+      <div class="mrow"><span class="mlbl">Library</span><div class="swprev" id="mergeNew"></div></div>
+      <div class="mbtns">
+        <button id="mergeReplace" class="primary">Replace</button>
+        <button id="mergeMerge">Merge</button>
+        <button data-close class="ghost">Cancel</button>
+      </div>
+      <p class="setnote" id="mergeNote" style="margin:8px 0 0"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Save to Library -->
+<div class="modal" id="nameModal">
+  <div class="dlg namedlg">
+    <header><h3>Save to Library</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <label>Name <input type="text" id="histName" spellcheck="false"></label>
+      <div class="swprev" id="histPrev"></div>
+      <div class="sharefoot"><span class="note">Only colors and names are saved, never the image.</span><button data-close>Cancel</button><button id="histNameOk" class="primary">Save</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="modal" id="settingsModal">
+  <div class="dlg setdlg">
+    <header><h3>Settings</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <h4>Modules</h4>
+      <div id="modList"></div>
+      <p class="setnote">Each module is a workspace tab. Turn off the ones you don't use. Palette, Library and Share work the same in every module.</p>
+      <h4>Values</h4>
+      <label title="ACEScg (AP1) linear values: the sRGB color converted for an ACES render pipeline. Use them when typing raw numbers (VEX, Python, node fields that don't convert)."><input type="checkbox" id="setAces"> Show ACEScg values on each color</label>
+      <p class="setnote">Settings and the Library are stored in this browser only.</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+// ============================================================
+// Chromadrop
+// ============================================================
+const APP = { name: "Chromadrop", version: "0.12.2", year: 2026 };
+const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
+console.log(`${APP.name} v${APP.version} loaded`);
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+// ---------------- State ----------------
+const state = {
+  imgLoaded: false,
+  imgName: "palette",
+  src: null,        // { w, h, data } full-res (capped) pixel data
+  palette: [],      // { id, source:'auto'|'pin', r,g,b, name, weight, u, v }  pin number = index + 1
+  pinCounter: 0,
+  nextId: 1,
+  hoverId: null,
+  title: null,      // palette name used by card + share (defaults to image name)
+  selId: null,
+  suppressed: [],   // Lab colors of auto pins the user deleted; skipped by extract()
+};
+
+// ---------------- Local storage (per browser, never uploaded) ----------------
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch { return false; } },
+};
+const SETTINGS_KEY = "chromadrop.settings.v1";
+const settings = Object.assign({ modules: {}, acescg: true }, LS.get(SETTINGS_KEY, {}));
+const saveSettings = () => LS.set(SETTINGS_KEY, settings);
+
+// ---------------- Color math ----------------
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const s2l = c => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+const l2s = c => { c = clamp(c, 0, 1); return 255 * (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055); };
+const S2L = new Float64Array(256); for (let i = 0; i < 256; i++) S2L[i] = s2l(i);
+
+function rgbToLab(r, g, b) {
+  const R = s2l(r), G = s2l(g), B = s2l(b);
+  let x = (R * 0.4124564 + G * 0.3575761 + B * 0.1804375) / 0.95047;
+  let y = (R * 0.2126729 + G * 0.7151522 + B * 0.0721750);
+  let z = (R * 0.0193339 + G * 0.1191920 + B * 0.9503041) / 1.08883;
+  const f = t => t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116;
+  x = f(x); y = f(y); z = f(z);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+const dist2 = (a, b) => (a[0]-b[0])**2 + (a[1]-b[1])**2 + (a[2]-b[2])**2;
+
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+  let h = 0;
+  if (d) {
+    if (mx === r) h = ((g - b) / d) % 6;
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60; if (h < 0) h += 360;
+  }
+  return [h, mx ? d / mx : 0, mx];
+}
+// Linear sRGB (Rec.709 primaries, D65) -> ACEScg (AP1 primaries, D60), Bradford adaptation
+const M_709_TO_AP1 = [
+  [0.6130974, 0.3395231, 0.0473795],
+  [0.0701937, 0.9163539, 0.0134524],
+  [0.0206156, 0.1095698, 0.8698146],
+];
+function acescg(c) {
+  const l = [S2L[c.r], S2L[c.g], S2L[c.b]];
+  return M_709_TO_AP1.map(m => m[0] * l[0] + m[1] * l[1] + m[2] * l[2]);
+}
+const hex2 = n => Math.round(n).toString(16).padStart(2, "0").toUpperCase();
+const toHex = c => `#${hex2(c.r)}${hex2(c.g)}${hex2(c.b)}`;
+const luminance = c => 0.2126 * S2L[c.r] + 0.7152 * S2L[c.g] + 0.0722 * S2L[c.b];
+const inkFor = c => luminance(c) > 0.35 ? "#111" : "#fff";
+
+// ---------------- Color names ----------------
+// Short single-word names, no accents. Sources: xkcd color survey (CC0) and
+// color-name-list "short" by David Aerne / meodai (MIT), filtered for this app.
+const NAME_DATA = "abloom:f1cbcd,abyssal:404c57,acai:48295b,acid:00ff22,acorn:7f5e50,acropolis:f8e2ca,adobe:bd6c48,airborne:a2c2d0,airy:dae6e9,alaska:dadad1,algae:54ac68,alligator:886600,almond:eddcc8,alpaca:f9ede2,aluminium:848789,amaretto:ab6f60,amazon:387b54,amber:feb308,ambrosia:c6e1bc,amethyst:9b5fc0,anchovy:756f6b,annatto:8c5341,anthracite:28282d,antiguan:bddfd8,antique:8b846d,apple:6ecb3c,apricot:ffb16d,apricotta:d8a48f,aqua:13eac9,aquamarine:04d8b2,aquarius:2db0ce,aquatic:99c1cc,arancio:ff7013,archaeology:6e6a5e,arctic:648589,argent:888888,argento:cecac3,ariel:aed7ea,armadillo:484a46,armour:74857f,armoury:6a6b65,arrowwood:b3861e,arsenic:3b444b,artichoke:8f9779,arugula:75ad5b,ash:bebaa7,asparagus:77ab56,asphalt:130a06,aster:867ba9,astral:376f89,athena:dcd7cc,atlantis:336172,aubergine:3d0734,auburn:9a3001,aurora:ebd147,autumnal:ad5928,avocado:90b134,aztec:293432,azul:1d5dec,azulado:211d49,azure:069af3,azureno:8fa0d5,backyard:879877,baklava:efb435,ballerina:f2cfdc,ballet:f7d5d4,balsamico:130d07,baltic:279d9f,bambino:8edacc,banana:ffff7e,bancha:666a47,bangalore:bbaa88,barbarossa:a84734,barbecue:c26157,barbera:8b031c,barberry:ee1133,bark:5f5854,barolo:71000e,basil:879f84,bay:b3e2d3,becquerel:4bec13,beekeeper:f6e491,beer:fcaa12,beeswax:e9d7ab,begonia:fa6e79,beige:e6daa6,bejewelled:25a26f,belladonna:220011,bellflower:5d66aa,bellini:f4c9b1,beluga:eff2f1,bengal:cc974d,berber:d8cfb6,bergamot:95c703,bermuda:1b7d8d,bermudagrass:6bc271,berry:990f4b,bianca:f4efe0,biscuit:feedca,bison:6e4f3a,bisque:ffe4c4,bittersweet:fea051,black:000000,blackberry:43182f,blackout:0e0702,blackwater:545663,blanco:ebeae5,blazing:e94e41,blond:faf0be,blossom:fee9d8,blue:0343df,bluebell:333399,blueberry:464196,bluebonnet:1c1cf0,bluegreen:017a79,bluegrey:85a3b2,bluetiful:3c69e7,blush:f29e8e,boa:7f7755,bolognese:bb4400,bone:e0d7c6,bonfire:f78058,bonsai:787b54,bookworm:ebe3de,bordeaux:7b002c,botanical:4d6e2f,botanist:9ad28c,botticelli:b70272,boulevardier:d40701,bourbon:af6c3e,brandy:dcb68a,brass:b5a642,breeze:aec9ea,breezy:c2dde6,brick:a03623,bride:efe7eb,brilliance:fdfdfd,brisket:6e4534,broccoli:87b364,bronze:a87900,bronzed:dd6633,broom:eecc24,brown:653700,brownie:964b00,brownstone:785441,brume:c6c6c2,brunette:664238,bruschetta:b2654e,bubblegum:ff6cb5,bubbles:e7feff,buckeye:674834,bucolic:1b6634,buff:fef69e,bullfrog:8a966a,bumblebee:ffc82a,burgundy:610023,burned:520b00,burrito:eed7c1,butter:ffff81,butterbeer:af7934,buttercream:efe0cd,buttered:ece2b7,buttermelon:fff7db,buttermilk:fffee4,butternut:ffa177,butterscotch:fdb147,butterum:c68f65,buttery:ffc283,buzz:f0c641,cabaret:cd526c,cabbage:87d7be,cactus:5b6f55,cajeta:c46d29,calabrese:f4a6a3,calypso:3d7188,camel:c69f59,camellia:f6685a,cameo:f2debc,camo:7f8f4e,campanula:3473b7,campfire:ce5f38,canary:fdff63,candlelight:fcd917,candy:ff9b87,cantaloupe:ffd479,capers:897a3e,caponata:822a10,cappuccino:704a3a,capri:00bfff,caramel:af6f09,caramelise:d58a37,carbon:333333,cardamom:aaaa77,cardboard:c19a6c,cardinal:c41e3a,caribbean:caf0e5,caribou:816c5e,carmine:9d0216,carnation:fd798f,carnivore:991111,carona:fba52e,carpaccio:e34234,carrot:fd6f3b,cascara:ee4433,cashmere:d1b399,castaway:6dbac0,catfish:657d82,cathedral:acaaa7,catnip:80aa95,cauliflower:ebe5d0,caveman:625c58,caviar:2b2c30,cayenne:941100,celadon:befdb7,celery:c1fd95,celestial:007894,cement:a5a391,ceramic:fcfff9,cerise:de0c62,cerulean:0485d1,chalet:c29867,champagne:e9d2ac,channel:f1c3c2,chanterelle:ffc66e,chantilly:edb8c7,charcoal:343837,charm:d0748b,chartreuse:c1f80a,cheddar:ee9a09,cheese:ffa600,cheesecake:fffcda,cherry:cf0234,cherryade:b22743,chestnut:742802,chickadee:ffcf65,chimaera:74626d,chinotto:554747,chipmunk:cfa14a,chocoholic:993300,chocolate:3d1c02,chorizo:aa0011,chrome:e1dfe1,chutney:9f5e4e,cigar:7d4e38,cinder:242a2e,cinnamon:ac4f06,cinnapink:a6646f,citadel:6a7f8b,citrus:9fb70a,cityscape:dae3e7,clairvoyant:480656,claret:680018,clay:b66a50,clementine:e96e00,cloudless:d6eafc,clover:008f00,cobalt:1e488f,cockatoo:58c8b6,cocoa:875f42,cocoloco:aa8f7a,coconut:965a3e,cocoon:dedbcc,coffee:a6814c,cognac:d48c46,cola:3c2f23,concord:827f79,concrete:d2d1cd,conifer:b1dd52,conker:b94e41,copacabana:006c8d,copper:b66325,copperhead:d68755,coquelicot:ff3800,coral:fc5a50,corbeau:111122,corn:fbec5d,cornflake:f0e68c,cornflower:6a79f7,cornsilk:fff8dc,corona:ffb437,cortex:a99592,cosmic:b8b9cb,couch:4e2a20,countryside:a4a404,couscous:ffe29b,cousteau:55a9d6,cowboy:443736,coyote:dc9b68,cranberry:9e003a,cream:ffffc2,creamy:efe8db,creme:ffffb6,creole:393227,crepe:d4bc94,crepuscular:e7dcce,crimson:8c000f,crisps:e2bd67,croissant:c4ab86,crow:180614,crucible:555b59,crystal:a7d8de,cucumber:006400,cumin:a58459,cumulus:f3f3e6,curry:d6a332,currywurst:ddaa33,custard:fffd78,cuttlefish:7fbbc2,cyan:00ffff,cyberpink:ff2077,cypress:585d40,daffodil:ffff31,dandelion:fedf08,darkblue:030764,darkgreen:054907,deer:ba8759,denim:3b638c,desert:ccad60,diamond:faf7e2,diesel:322c2b,dill:6f7755,dirt:8a6e45,dogwood:faeae2,dolphin:86c4da,dove:b3ada7,drab:828344,dragonfly:314a76,driftwood:a67a45,droplet:aaddff,drover:fbeb9b,dumpling:f7ddaa,dune:d5c0a1,dusk:4e5481,dust:b2996e,dynamite:ff4422,eagle:a26c36,earth:a2653e,earthbound:a48a80,earthworm:c3816e,ebony:313337,eclipse:3f3939,ecological:677f70,ecru:feffca,edamame:9ca389,eggnog:fdea9f,eggplant:380835,eggshell:ffffd4,eigengrau:16161d,electra:55b492,emerald:01a049,eminence:6e3974,empress:7c7173,endive:cee1c8,endo:5da464,enoki:f8faee,envy:8ba58f,epink:dd33ff,equestrienne:a07569,escalope:cc8866,escargot:fff1d8,espresso:4e312d,estragon:a5af76,ether:98b2b4,eucalyptus:329760,everglade:264334,evergreen:05472a,extraviolet:661188,eyeball:fffbf8,falafel:aa7711,fandango:b53389,fatback:fff7ed,fawn:cfaf7b,feather:dad9ce,featherbed:afcbe5,fedora:625665,feijoa:a5d785,fennelly:9a9e80,fern:63a950,ferntastic:71ab62,fernweh:977b2f,feta:dbe0d0,ficus:3b593a,fiesta:edd8d2,fiord:4b5a62,fire:8f3f2a,fireball:ce2029,firebug:cd5c51,firecracker:f2643a,firewatch:ee8866,fizz:b1dbaa,flame:e25822,flamenco:ea8645,flan:f6e3b4,flashlight:f9eed6,flirt:7a2e4d,flood:6677bb,flora:73fa79,fluorescence:89d178,fog:d6d7d2,fogtown:eef0e7,foil:c0c3c4,foliage:95b388,fondant:f4e2cf,fondue:fdf5c4,forest:0b5509,forester:9aa77c,forestial:007733,forestry:2f441f,fox:ca4e33,framboise:e40058,freefall:565266,fresco:f4dbd9,frog:58bc08,frost:e1e4c5,frostbite:acfffc,fuchsia:ed0dd9,fuego:ee5533,furnace:dd4124,fusilli:f1e8d6,futon:edf6db,galaxea:2e305e,gardenia:f1e8df,gazelle:947e68,gecko:9d913c,ghost:c0bfc7,gin:d9dfcd,ginger:b06500,gingerbread:8c4a2f,giraffe:fefe33,glacier:78b1bf,glassmith:46b5c0,glowlight:fff6b9,goddess:d0e1e8,gold:dbb40c,goldbricker:c5a049,golden:f5bf03,goldenrod:fac205,goldfinch:f8e462,goldfish:f2ad62,goldie:c89d3f,goldilocks:fff39a,gothic:698890,granite:746a5e,granola:f5ce9f,grape:6c3461,grapefruit:fd5956,graphite:383428,grass:5cac2d,grasshopper:77824a,grauzone:85a3b2,gravlax:ec834f,green:15b01a,greenblue:23c48b,greenfinch:bda928,greenhorn:b2cc9a,greenhouse:3e6334,grey:929591,greybeard:d4d0c5,greyblue:77a1b5,greystone:b7b9b5,grilled:633f2e,grisaille:91979f,grizzly:885818,guacamole:95986b,gull:918c8f,gunmetal:536267,gunsmoke:7a7c76,haiti:2c2a35,halloween:fe653c,halo:e2c392,havana:3b2b2c,haystack:cfac47,hazel:8e7618,hazelnut:a8715a,hazelwood:fff3d5,heather:a484ac,heliotrope:d94ff5,helium:eae5d8,hemp:987d73,herbal:29ab87,herbalist:969e86,herbivore:88ee77,heron:6a6887,hibernation:6f5166,hibiscus:b6316c,hickory:b7a28e,highlander:3a533d,highlands:449084,himalaya:736330,hinterland:616c51,hive:ffff77,hollandaise:ffee44,homegrown:63884a,homeworld:2299dd,honey:ae8934,honeycomb:ddaa11,honeydew:f0fff0,honeypot:ffc863,honeysuckle:e8ed69,horizon:648894,horseradish:e6dfc4,hotspot:ff4433,hourglass:e5e0d5,hummus:eecc99,hunter:33534b,hurricane:8b7e77,hydro:49747f,ibis:f4b3c2,ice:d6fffa,iceberg:dae4ee,icebreaker:b7c2cc,iguana:878757,imperial:602f6b,incense:af9a7e,inchworm:b2ec5d,indiglow:301885,indigo:380282,indochine:9c5b34,infrared:fe486c,infusion:c8d0ca,inkblot:393f4b,inkjet:44556b,iridescent:3a5b52,iris:6258c4,iron:5e5e5e,ironside:7e8082,ivory:ffffcb,ivy:277b74,jacuzzi:007cac,jade:1fa774,jaffa:e27945,jaguar:29292f,jakarta:efddc3,jambalaya:f7b572,jasmine:fff4bb,java:259797,jazz:5f2c2f,jewel:136843,jumbo:878785,jungle:00a466,jupiter:e1e1e2,kabuki:a73a3e,kabul:6c5e53,kale:648251,kashmir:6f8d6a,kathmandu:ad9a5d,kefir:d5d5ce,kelp:4d503c,ketchup:9a382d,khaki:aaa662,kilimanjaro:3a3532,kimchi:ed4b00,kimono:6d86b6,kindleflame:e9967a,kirsch:b2132b,kiwi:9cef43,koi:d2663b,kombucha:d89f66,koromiko:feb552,labrador:f2ecd9,lagoon:4b9b93,laguna:36a5c9,laksa:e6bf95,lama:e0bb95,langoustine:dc5226,latte:c5a582,lava:cf1020,lavender:c79fef,lead:212121,leaf:71aa34,leafy:679b6a,leapfrog:41a94f,leather:ac7434,leek:98d98e,lemon:fdff52,lemonade:efe499,lemongrass:999a86,liaison:8c3f52,lichen:8fb67b,lifeguard:e50000,lightblue:7bc8f6,lightgreen:76ff7b,lighthouse:f3f4f4,lilac:cea2fd,lily:c19fb3,lima:a9f971,lime:aaff32,limestoned:a7cca4,limon:f7eb73,limonana:11dd66,limoncello:bfff00,linen:faf0e6,lion:c19a62,lionheart:cc2222,lipstick:d5174e,liquorice:0a0502,liver:654a46,lizard:7b6943,lobster:bb240c,lollipop:d91e3f,lonestar:522426,lotion:fefdfa,lox:ec9079,lumberjack:9d4542,luna:d4d8ce,lush:c5bda0,lynx:604d47,macadamia:e1ccaf,macaroni:f3d085,macaroon:b38b71,macau:46c299,machinery:9999aa,madras:473e23,magenta:c20078,magentle:aa11aa,magma:ff4e01,magnesium:c1c2c3,magnet:525054,magnetic:b2b5af,magnolia:fff9e4,maharaja:3f354f,mahogany:4a0100,maize:f4d054,maizena:fbec5e,majesty:673e6e,malibu:66b7e1,mallard:254855,malt:ddcfbc,mamba:766d7c,mandarin:f37a48,mango:ffa62b,mangrove:757461,manhattan:e2af80,manilla:fffa86,mantis:74c365,maraschino:ff2600,marigold:fcc006,marina:5a88c8,marine:042e60,maritime:bdcfea,maroon:650021,mars:ad6242,marshland:2b2e26,marshmallow:f0eee4,martian:aea132,martini:b7a8a3,masala:57534b,mascarpone:ece6d4,matterhorn:524b4b,mauve:ae7181,mauvelous:d6b3c0,mayonnaise:f6eed1,meat:f08080,meatloaf:663311,medallion:c3a679,mediterranea:39636a,medlar:d5d7bf,melanzane:342931,melon:ff7855,melondrama:ee8170,mercurial:b6b0a9,mercury:ebebeb,merguez:650021,meringue:f3e4b3,merino:e1dbd0,merlot:730039,metal:babfbc,metallic:bcc3c7,meteor:bb7431,meteorite:4a3b6a,metropolis:61584f,microchip:babcc0,midnight:03012d,midori:2a603b,milk:fdfff5,mimosa:f5e9d5,mindaro:daea6f,minestrone:c72616,ming:407577,mink:8a7561,mint:9ffeb0,mintnight:7cbbae,mistletoe:8aa282,moccasin:fbebd6,mocha:9d7651,mochaccino:945200,mochito:8efa00,mohalla:a79b7e,mojito:e4f3e0,molasses:574a47,mole:392d2b,monstera:5f674b,monza:c7031e,moonbeam:c2b8ae,moonlight:f6eed5,moonraker:c0b2d7,moonscape:806b77,moonwalk:bebec4,moorland:a6ab9b,morel:73645c,morocco:b67267,morrel:ac8f6c,mosque:005f5b,moss:769958,mosslands:779966,mossy:857349,moth:cbc1a2,motherland:bcb667,mothy:cebbb3,mud:735c12,muddy:a13905,muesli:9e7e53,mulberry:920a4e,mule:827b77,murasaki:4f284b,murmur:c7cfc7,mushroom:ba9e88,mustang:5e4a47,mustard:ceb301,mykonos:387abe,myrtle:21421e,nacho:ffcb5d,namibia:7c6d61,nature:bfd5b3,nautical:2e4a7d,nautilus:273c5a,naval:41729f,navy:01153e,nebula:a104c3,nectar:ecdacd,nectarine:ff8656,negroni:eec7a2,neptune:007dac,nero:252525,netherworld:881111,nettle:bbac7d,nickel:929292,nightfall:43535e,nightlife:27426b,nightwalker:161d3b,nile:afb982,nippon:bc002c,nirvana:a2919b,nocturnal:767d86,nocturne:344d58,noir:312b27,nomad:a19986,noodles:f9e3b4,northwind:cee5e9,norway:a4b88f,nougat:ae8a78,nugget:bc9229,nutmeg:7e4a3b,nylon:e9e3cb,oakwood:bda58b,oasis:0092a3,oatmeal:c9c1b1,oblivion:000435,obsidian:445055,ocean:017b92,ocher:bf9b0c,ochre:bf9005,ocre:c69c04,oil:313330,olive:6e750e,omgreen:8ca891,onsen:66eebb,onyx:464544,opal:aee0e4,opera:816575,orange:f97306,orangered:fe420f,orbital:6d83bb,orchid:c875c4,organic:747261,oriole:ff8008,outback:c9a375,overgrown:88dd00,overgrowth:88cc33,oxblood:800020,oyster:e3d3bf,pacific:24646b,paella:dcc61f,palladian:eee9df,palm:afaf5e,pancake:f7d788,panela:9b5227,panorama:327a88,pansy:f75394,papaya:fe985c,paprika:7c2d37,papyrus:999911,paradiso:488084,parchment:fefcaf,parfait:c8a6a1,parmesan:ffffdd,pasta:f7dfaf,pastrami:e87175,pastry:f8deb8,patina:66d0c0,patisserie:eddbc8,pea:a4bf20,peach:ffb07c,peanut:7a4434,pear:cbf85f,pearl:eae0c8,pearly:f4e3df,pebble:9d9880,pecan:a67253,pedigrey:8f8e8c,peekaboo:e6dee6,pelati:ff3333,pelican:c1bcac,peppermint:d7e7d0,pepperoni:aa4400,pergament:bfa58a,periwinkle:8e82fe,permafrost:98eff9,persimmon:e59b34,peru:cd853f,pesto:c1b23e,petrichor:66cccc,petrified:8b8680,petrol:005f6a,phantom:6e797b,pheasant:c17c54,philodendron:116356,pi:314159,picante:a04933,pickled:b3a74b,pigeon:a9afaa,piglet:ffc0c6,pilsener:f8f753,pimento:dc5d47,pine:2b5d34,pineapple:563c0d,pink:ff81c0,pinkling:eb84f5,pinky:fc86aa,pistachio:c0fa8b,pita:f5e7d2,pizza:bf8d3c,plantation:3e594c,plaster:eaeaea,platinum:e5e4e2,plum:580f41,plummy:675a75,plunge:035568,poblano:077f1b,polar:e5f2e7,polenta:efc47f,pollen:eeeeaa,pollination:eedd66,pomegranate:b53d45,pomodoro:c30232,pompelmo:ff6666,pony:c6aa81,poolside:bee0e2,popcorn:f7d07a,poppy:c23c47,porcelain:dddcdb,porcini:d9ae86,poseidon:143c5d,powdered:f9f2e7,prairie:0b9d6a,primavera:6fa77a,primrose:d6859f,prismarine:117777,promenade:f8f6df,prosciutto:e0b4a4,prosecco:fad6a5,prune:701c11,prunella:864788,puce:a57e52,pulp:e18289,puma:96711c,pumpernickel:6c462d,pumpkin:e17701,punch:dc4333,purple:7e1e9c,purplish:94568c,putty:beae8a,pyramid:9f7d4f,quercitron:e5b03d,quicksand:ac9884,quicksilver:a6a6a6,quince:d4cb60,radish:a42e41,rainforest:009a70,rajah:fbab60,rampart:bcb7b1,rapeseed:c19a13,raspberry:b00149,raven:0b0b0b,red:e50000,redstone:e46b71,ridgeback:ef985c,ripasso:94312f,riverbed:86bebe,roasted:785246,roastery:692302,romesco:f48101,rosa:fe86a4,rose:cf6275,rosecco:eebbdd,rosemary:405e5c,rosetti:cf929a,rosewater:f6dbd8,rosewood:65000b,rouge:ab1239,royal:0c1793,royalty:5930a9,ruby:ca0147,rum:716675,russet:a13905,rust:a83c09,safflower:fdae44,saffron:feb209,saffronaut:932a25,sage:87ae73,sailor:445780,sakura:dfb1b6,salametti:e25e31,salami:820000,salmon:ff796c,salt:efede6,salted:ebeadc,salvia:a8b59e,samba:aa262b,sand:e2ca76,sandstone:c9ae74,sandstorm:ecd540,sandworm:fce883,sandy:f1da7a,sapling:a3c05a,sappanwood:9e3d3f,sapphire:2138ab,saturn:fae5bf,sauerkraut:eee0b9,scampi:6f63a0,scarlet:be0119,sea:3c9992,seaborn:85c2b2,seafarer:204d68,seafoam:80f9ad,seashell:fff5ee,seaside:66a4b0,seaweed:18d17b,seedling:c0cba1,semolina:c7ab8b,sepia:985e2b,sesame:baa38b,shadows:6b6d6a,shamrock:01b44c,shark:cadcde,sheaf:d2ae84,shiitake:a5988a,shipmate:7aa3cc,shipwreck:968772,shipyard:4f6f85,shore:81d5c6,shortbread:f5e6d3,shrimp:e29a86,sienna:a9561e,signal:cc0002,silkworm:eeeecc,silver:c5c9c7,silverback:cbcbcb,silverfish:8d95aa,silverplate:c2c0ba,siren:69293b,sky:82cafc,skyscraper:d3dbe2,skyvory:dcd7cd,slate:516572,slumber:2d517c,smalt:003399,smokescreen:5e5755,smoky:605d6b,smouldering:b6321e,snow:fffafa,snowflake:eff0f0,snowman:fefafb,soba:d1b49f,solar:fbeab8,sombrero:b39c8c,sooty:141414,sour:e5edb5,spa:ceece7,spacescape:222255,spearmint:1ef876,sphinx:a99593,spiced:bb715b,spicy:ff1111,splashdown:d4e8d8,sprouted:f3d48b,spruce:0a5f38,squash:f2ab15,sriracha:f56961,star:ffe500,stardust:ddd3ae,stargazer:3f5865,stargazing:414549,starstruck:4664a5,statuary:9ea4a5,steam:dddddd,steel:738595,stellar:46647e,sterling:d1d4d1,stone:ada587,stonewash:74819a,stoplight:dd1111,storm:000b44,stormy:b0bcc3,straw:fcf679,strawberry:fb2943,stroopwafel:a86f48,submerged:4a7d82,subnautical:012253,succulents:007744,sugarwinkle:fdc5e3,sulphur:cab012,sulphuric:eeed56,summit:8bb6b8,sunbathed:f5dd98,sunbeam:f5edb2,sunburst:f5b57b,sunflower:ffc512,sunlight:ebcd95,sunray:e3ab57,sunspill:ddc283,superstar:ffcc11,swamp:698339,tabasco:a02712,taco:f3c7b3,tamahagane:3b3f40,tan:d1b26f,tandoori:bb5c4d,tangerine:ff9408,tapioca:dac9b9,tatami:deccaf,taupe:b9a281,taupedo:baaea8,tea:65ab7c,teak:ab8953,teakwood:8d7e6d,teal:029386,teardrop:d1eaea,telemagenta:aa22cc,tempest:79839b,terracotta:ca6641,terrestrial:276757,thalassa:53b1ba,thunderbird:923830,thunderbolt:fdefad,thundercloud:698589,thunderdome:f6f3a7,tiger:be9c67,tin:919191,toad:748d70,toadstool:b8282f,tobacco:684f3c,toffee:755139,tofu:e6e5d6,tomato:ef4026,tonkatsu:edac36,topaz:13bbaf,torchlight:ffc985,toreador:cd123f,tortilla:efdba7,tostada:e3c19c,toupe:c7ac7d,treetop:91b6ac,trout:4c5356,tulip:ff878d,tuna:46494e,turf:415b36,turquoise:06c2ac,turtle:523f31,tuscan:fbd5a6,tutu:f8e4e3,tuxedo:3f3c43,twilight:4e518b,ultraberry:770088,ultramarine:2000b1,umber:b26400,umbra:211e1f,underclover:428c49,underground:665a51,underworld:1e231c,vanilla:f3e5ab,vaporised:cbf4f8,vaporwave:ff66ee,vapour:f0ffff,vegetarian:22aa00,vegetation:5ccd97,velvet:750851,venus:eed053,verde:7fb383,verdigris:43b3ae,vermicelles:dabe82,vermilion:f4320c,vermillion:f4320c,verminal:55cc11,viking:4db1c8,vinaigrette:efdaae,vineyard:819e84,vintage:847592,viola:966ebd,violet:9a0eea,viridian:1e9167,void:050d25,volt:ceff00,vulcan:36383c,vulcanised:424443,waikiki:218ba0,walkway:a3999c,walnut:773f1a,walrus:999b9b,warrior:7d685b,wasabi:afd77f,wasteland:9c8855,water:d4f1f9,waterfall:3ab0a2,watermelon:fd4659,waterworld:00718a,wave:a5ced5,wavelet:7dc4cd,wax:ddbb33,waxwing:c0c2c0,weissbier:b3833b,whale:7c8181,wheat:fbdd7e,whirlpool:a5d8cd,whiskers:f6f1e2,whiskey:d29062,whisky:c2877b,white:ffffff,wilderness:8f886c,wildfire:ff8833,windfall:84a7ce,windjammer:62a5df,windstorm:6d98c4,windy:bdd1d2,wine:80013f,wineberry:663366,wintergreen:20f986,wintermint:94d2bf,wisteria:a87dc2,wizard:4d5b88,wolfram:b5b6b7,woodgrain:996633,woodhaven:9e7b6c,woven:e0d1a0,wreath:76856a,yakitori:ecab3f,yellow:ffff14,yellowgreen:bbf90f,yolk:eec701,yucca:75978f,zen:cfd9de,zenith:497a9f,zinc:92898a,zoodles:b8bf71,zucchini:17462e";
+function oklab(r, g, b) {
+  const R = S2L[r], G = S2L[g], B = S2L[b];
+  const l = Math.cbrt(0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B);
+  const m = Math.cbrt(0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B);
+  const s = Math.cbrt(0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B);
+  return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s,
+          1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s,
+          0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s];
+}
+const NAMES = NAME_DATA.split(",").map(e => {
+  const [n, h] = e.split(":");
+  return { n, lab: oklab(parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)) };
+});
+// Nearest name in OKLab, skipping names already used in the palette
+function nameFor(c, taken) {
+  const lab = oklab(c.r, c.g, c.b);
+  let best = null, bd = Infinity;
+  for (const e of NAMES) {
+    if (taken && taken.has(e.n)) continue;
+    const d = dist2(lab, e.lab);
+    if (d < bd) { bd = d; best = e.n; }
+  }
+  return best || "color";
+}
+// Give every entry without a user-set name a unique auto name (palette order)
+function assignNames() {
+  const taken = new Set(state.palette.filter(c => c.userNamed).map(c => c.name.toLowerCase()));
+  for (const c of state.palette) {
+    if (c.userNamed) continue;
+    c.name = nameFor(c, taken);
+    taken.add(c.name);
+  }
+}
+
+// ---------------- Formatting ----------------
+function dec() { return +$("#decimals").value; }
+function wrap(parts) {
+  const s = parts.join(", ");
+  switch ($("#copyStyle").value) {
+    case "py": return `(${s})`;
+    case "vex": return `{${s}}`;
+    case "c4d": return `c4d.Vector(${s})`;
+    case "glsl": return `vec3(${s})`;
+    default: return s;
+  }
+}
+function values(c) {
+  const d = dec();
+  const srgb = [c.r, c.g, c.b].map(v => (v / 255).toFixed(d));
+  const lin = [c.r, c.g, c.b].map(v => S2L[v].toFixed(d));
+  const aces = acescg(c).map(v => v.toFixed(d));
+  const [h, s, v] = rgbToHsv(c.r, c.g, c.b);
+  return {
+    hex:  { k: "HEX",    show: toHex(c), copy: toHex(c) },
+    rgb:  { k: "RGB",    show: `${c.r}, ${c.g}, ${c.b}`, copy: wrap([c.r, c.g, c.b]) },
+    srgb: { k: "sRGB",   show: srgb.join(", "), copy: wrap(srgb) },
+    lin:  { k: "LINEAR", show: lin.join(", "), copy: wrap(lin) },
+    aces: { k: "ACEScg", show: aces.join(", "), copy: wrap(aces) },
+    hsv:  { k: "HSV",    show: `${Math.round(h)}°, ${Math.round(s*100)}%, ${Math.round(v*100)}%`,
+            copy: `${Math.round(h)}, ${Math.round(s*100)}, ${Math.round(v*100)}` },
+  };
+}
+
+// ---------------- Clipboard / toast ----------------
+let toastT;
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), 1400);
+}
+async function copyText(txt, label) {
+  try { await navigator.clipboard.writeText(txt); }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = txt;
+    ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta);
+    ta.select(); document.execCommand("copy"); ta.remove();
+  }
+  toast(`Copied ${label || (txt.length > 40 ? txt.slice(0, 40) + "…" : txt)}`);
+}
+
+// ---------------- Image loading ----------------
+const MAX_SRC = 4096;
+function loadFile(file) {
+  if (!file || !file.type.startsWith("image/")) return toast("Not an image");
+  state.imgName = file.name ? file.name.replace(/\.[^.]+$/, "") : "pasted";
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    const sc = Math.min(1, MAX_SRC / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * sc)), h = Math.max(1, Math.round(img.naturalHeight * sc));
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h;
+    const cx = cv.getContext("2d", { willReadFrequently: true });
+    cx.drawImage(img, 0, 0, w, h);
+    state.src = { w, h, data: cx.getImageData(0, 0, w, h).data, canvas: cv, img };
+    $("#img").src = url;
+    state.imgLoaded = true;
+    state.palette = state.palette.filter(c => c.u == null); state.pinCounter = 0; state.selId = null; state.suppressed = [];
+    if (!state.palette.length) state.title = null;   // new image, new default name
+    $("#drop").style.display = "none";
+    $("#imgBox").style.display = "block";
+    layoutImage();
+    extract();
+  };
+  img.onerror = () => toast("Could not read image");
+  img.src = url;
+}
+
+function layoutImage() {
+  if (!state.imgLoaded) return;
+  const st = $("#stage").getBoundingClientRect();
+  const pad = 24;
+  const aw = st.width - pad * 2, ah = st.height - pad * 2;
+  const sc = Math.min(aw / state.src.w, ah / state.src.h);
+  const w = state.src.w * sc, h = state.src.h * sc;
+  const box = $("#imgBox");
+  box.style.width = w + "px"; box.style.height = h + "px";
+  box.style.left = (st.width - w) / 2 + "px"; box.style.top = (st.height - h) / 2 + "px";
+}
+new ResizeObserver(layoutImage).observe($("#stage"));
+
+// ---------------- Sampling (pins) ----------------
+function sampleAt(u, v, rad) {
+  const { w, h, data } = state.src;
+  const cx = clamp(Math.floor(u * w), 0, w - 1), cy = clamp(Math.floor(v * h), 0, h - 1);
+  let r = 0, g = 0, b = 0, n = 0;
+  for (let y = cy - rad; y <= cy + rad; y++) {
+    if (y < 0 || y >= h) continue;
+    for (let x = cx - rad; x <= cx + rad; x++) {
+      if (x < 0 || x >= w) continue;
+      const i = (y * w + x) * 4;
+      if (data[i + 3] < 8) continue;
+      r += S2L[data[i]]; g += S2L[data[i + 1]]; b += S2L[data[i + 2]]; n++;  // average in linear light
+    }
+  }
+  if (!n) return { r: 0, g: 0, b: 0 };
+  return { r: Math.round(l2s(r / n)), g: Math.round(l2s(g / n)), b: Math.round(l2s(b / n)) };
+}
+
+// ---------------- Auto extraction ----------------
+// extract(true) = fresh: forget deleted auto colors first (Extract button / E key)
+function extract(fresh) {
+  if (!state.imgLoaded) return toast("Load an image first");
+  if (fresh === true) {
+    // Fresh extract = reset the image scan: drop colors that didn't come from the image
+    state.suppressed = [];
+    const off = state.palette.filter(c => c.u == null).length;
+    if (off) {
+      state.palette = state.palette.filter(c => c.u != null);
+      if (state.title != null && !state.palette.length) state.title = null;
+      setTimeout(() => toast(`Fresh extract: removed ${off} color${off === 1 ? "" : "s"} that weren't from the image`), 0);
+    }
+  }
+  const t0 = performance.now();
+  const dedupe = $("#dedupe").checked;
+  const K = +$("#kCount").value, mergeDE = dedupe ? +$("#mergeDE").value : 2, minPct = +$("#minPct").value, snap = $("#snap").checked;
+
+  // 1) Downscale for analysis
+  const MAXA = 256;
+  const sc = Math.min(1, MAXA / Math.max(state.src.w, state.src.h));
+  const W = Math.max(1, Math.round(state.src.w * sc)), H = Math.max(1, Math.round(state.src.h * sc));
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  cx.imageSmoothingEnabled = sc < 1; cx.imageSmoothingQuality = "low";
+  cx.drawImage(state.src.canvas, 0, 0, W, H);
+  const px = cx.getImageData(0, 0, W, H).data;
+
+  // 2) 15-bit histogram (5 bits per channel)
+  const NB = 32768;
+  const cnt = new Uint32Array(NB), sr = new Float64Array(NB), sg = new Float64Array(NB), sb = new Float64Array(NB);
+  const pixBin = new Int32Array(W * H).fill(-1);
+  for (let p = 0, i = 0; p < W * H; p++, i += 4) {
+    if (px[i + 3] < 128) continue;
+    const key = ((px[i] >> 3) << 10) | ((px[i + 1] >> 3) << 5) | (px[i + 2] >> 3);
+    cnt[key]++; sr[key] += px[i]; sg[key] += px[i + 1]; sb[key] += px[i + 2];
+    pixBin[p] = key;
+  }
+  const bins = [];
+  const binIndex = new Int32Array(NB).fill(-1);
+  let total = 0;
+  for (let k = 0; k < NB; k++) if (cnt[k]) {
+    const n = cnt[k], r = sr[k] / n, g = sg[k] / n, b = sb[k] / n;
+    binIndex[k] = bins.length;
+    bins.push({ key: k, w: n, r, g, b, lab: rgbToLab(r, g, b), c: -1 });
+    total += n;
+  }
+  if (!bins.length) return toast("Image is fully transparent");
+
+  // 3) Weighted k-means++ (deterministic: argmax of w * d²)
+  const k = Math.min(K, bins.length);
+  let heavy = bins.reduce((a, b) => b.w > a.w ? b : a);
+  const centers = [heavy.lab.slice()];
+  const dmin = bins.map(b => dist2(b.lab, centers[0]));
+  while (centers.length < k) {
+    let best = -1, bi = 0;
+    for (let i = 0; i < bins.length; i++) { const s = bins[i].w * dmin[i]; if (s > best) { best = s; bi = i; } }
+    if (best <= 0) break;
+    centers.push(bins[bi].lab.slice());
+    for (let i = 0; i < bins.length; i++) dmin[i] = Math.min(dmin[i], dist2(bins[i].lab, centers[centers.length - 1]));
+  }
+  for (let it = 0; it < 20; it++) {
+    let moved = false;
+    for (const b of bins) {
+      let bc = 0, bd = Infinity;
+      for (let c = 0; c < centers.length; c++) { const d = dist2(b.lab, centers[c]); if (d < bd) { bd = d; bc = c; } }
+      if (b.c !== bc) { b.c = bc; moved = true; }
+    }
+    const acc = centers.map(() => [0, 0, 0, 0]);
+    for (const b of bins) { const a = acc[b.c]; a[0] += b.lab[0] * b.w; a[1] += b.lab[1] * b.w; a[2] += b.lab[2] * b.w; a[3] += b.w; }
+    acc.forEach((a, c) => { if (a[3]) centers[c] = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; });
+    if (!moved) break;
+  }
+
+  // 4) Build clusters
+  let clusters = centers.map(() => ({ w: 0, r: 0, g: 0, b: 0, top: null }));
+  for (const b of bins) {
+    const cl = clusters[b.c];
+    cl.w += b.w; cl.r += S2L[Math.round(b.r)] * b.w; cl.g += S2L[Math.round(b.g)] * b.w; cl.b += S2L[Math.round(b.b)] * b.w;
+    if (!cl.top || b.w > cl.top.w) cl.top = b;
+  }
+  clusters = clusters.filter(c => c.w > 0).map(c => {
+    const col = snap
+      ? { r: Math.round(c.top.r), g: Math.round(c.top.g), b: Math.round(c.top.b) }
+      : { r: Math.round(l2s(c.r / c.w)), g: Math.round(l2s(c.g / c.w)), b: Math.round(l2s(c.b / c.w)) };
+    return { ...col, w: c.w, lab: rgbToLab(col.r, col.g, col.b) };
+  }).sort((a, b) => b.w - a.w);
+
+  // 5) Merge near-duplicates (heavier color wins) and drop tiny ones
+  const merged = [];
+  for (const c of clusters) {
+    const hit = merged.find(m => Math.sqrt(dist2(m.lab, c.lab)) < mergeDE);
+    if (hit) hit.w += c.w; else merged.push({ ...c });
+  }
+  const final = merged.filter(c => c.w / total * 100 >= minPct).sort((a, b) => b.w - a.w);
+
+  // 6) Marker placement: pick an interior pixel near each color's centroid
+  const binToFinal = new Int16Array(bins.length);
+  bins.forEach((b, i) => {
+    let bc = 0, bd = Infinity;
+    final.forEach((f, j) => { const d = dist2(b.lab, f.lab); if (d < bd) { bd = d; bc = j; } });
+    binToFinal[i] = bc;
+  });
+  const own = new Int16Array(W * H).fill(-1);
+  const cxs = final.map(() => [0, 0, 0]);
+  for (let p = 0; p < W * H; p++) {
+    if (pixBin[p] < 0) continue;
+    const f = binToFinal[binIndex[pixBin[p]]]; own[p] = f;
+    cxs[f][0] += p % W; cxs[f][1] += (p / W) | 0; cxs[f][2]++;
+  }
+  const R = 2;
+  const bestPos = final.map(() => ({ d: Infinity, x: 0, y: 0, interior: false }));
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const f = own[y * W + x]; if (f < 0) continue;
+    let interior = x >= R && y >= R && x < W - R && y < H - R;
+    if (interior) {
+      outer: for (let yy = y - R; yy <= y + R; yy++) for (let xx = x - R; xx <= x + R; xx++)
+        if (own[yy * W + xx] !== f) { interior = false; break outer; }
+    }
+    const c = cxs[f], mx = c[0] / c[2], my = c[1] / c[2];
+    const d = (x - mx) ** 2 + (y - my) ** 2;
+    const bp = bestPos[f];
+    if ((interior && !bp.interior) || (interior === bp.interior && d < bp.d)) { bp.d = d; bp.x = x; bp.y = y; bp.interior = interior; }
+  }
+
+  // 7) Replace auto entries, keep pins
+  const pins = state.palette.filter(p => p.source === "pin");
+  // Skip auto colors already claimed by a manual pin (same color within the merge ΔE)
+  const pinLabs = pins.map(p => rgbToLab(p.r, p.g, p.b));
+  const claimT = dedupe ? mergeDE : 5;
+  // Skip auto colors the user deleted (tolerant, since sliders shift colors a bit)
+  const supT = Math.max(claimT, 8);
+  const autos = final.map((c, i) => ({ c, i }))
+    .filter(({ c }) => !pinLabs.some(l => Math.sqrt(dist2(l, c.lab)) < claimT))
+    .filter(({ c }) => !state.suppressed.some(l => Math.sqrt(dist2(l, c.lab)) < supT))
+    .map(({ c, i }, n) => ({
+      id: state.nextId++, source: "auto", r: c.r, g: c.g, b: c.b,
+      name: "", weight: c.w / total,
+      u: (bestPos[i].x + 0.5) / W, v: (bestPos[i].y + 0.5) / H,
+    }));
+  // Keep names the user typed on auto colors that survive the re-extract
+  const prevNamed = state.palette.filter(p => p.source === "auto" && p.userNamed).map(p => ({ p, lab: rgbToLab(p.r, p.g, p.b) }));
+  for (const a of autos) {
+    const lab = rgbToLab(a.r, a.g, a.b);
+    const hit = prevNamed.find(q => Math.sqrt(dist2(q.lab, lab)) < 3);
+    if (hit) { a.name = hit.p.name; a.userNamed = true; }
+  }
+  state.palette = [...autos, ...pins];
+  render();
+  console.log(`[${APP.name}] extract: ${bins.length} bins -> ${final.length} colors in ${(performance.now() - t0).toFixed(1)} ms`);
+}
+
+// ---------------- Rendering ----------------
+function renderMarkers() {
+  const m = $("#markers"); m.innerHTML = "";
+  m.classList.toggle("hidden", !$("#showMarkers").checked);
+  for (const c of state.palette) {
+    if (c.u == null) continue;   // shared-link colors have no position on the image
+    const el = document.createElement("div");
+    el.className = "pin" + (c.source === "auto" ? " auto" : "") + (c.id === state.selId ? " sel" : "");
+    el.dataset.id = c.id;
+    el.style.left = (c.u * 100) + "%"; el.style.top = (c.v * 100) + "%";
+    el.style.background = toHex(c);
+    el.textContent = state.palette.indexOf(c) + 1; el.style.color = inkFor(c);
+    el.title = `${c.name}  ${toHex(c)}${c.source === "auto" ? `  (auto ${(c.weight * 100).toFixed(1)}%)` : ""}`;
+    if (c.id === state.hoverId) el.classList.add("hl");
+    m.appendChild(el);
+  }
+}
+
+function rowHTML(c) {
+  const v = values(c);
+  const tag = c.u == null ? (c.origin === "history" ? `<span class="tag" title="Loaded from the Library">LIBRARY</span>` : c.origin === "harmony" ? `<span class="tag" title="Added from Harmonies">GENERATED</span>` : c.origin === "video" ? `<span class="tag" title="From the Video module (video / frames)">VIDEO</span>` : `<span class="tag" title="Came from a share link">SHARED</span>`)
+    : c.source === "pin" ? `<span class="tag tpin" title="Placed or moved by you, kept on re-extract">MANUAL</span>` : `<span class="tag" title="Coverage in the image">AUTO ${(c.weight * 100).toFixed(1)}%</span>`;
+  const btn = key => `<button class="val" data-fmt="${key}" title="Click to copy: ${v[key].copy}"><span class="k">${v[key].k}</span><span class="v">${v[key].show}</span></button>`;
+  return `
+    <div class="chip" style="background:${toHex(c)}" title="Copy HEX"></div>
+    <div>
+      <div class="rhead">
+        <span class="grip" title="Drag to reorder">⋮⋮</span>
+        <span class="nbadge">${state.palette.indexOf(c) + 1}</span>
+        <input class="name" value="${c.name.replace(/"/g, "&quot;")}" spellcheck="false">
+        ${tag}
+        <button class="hx" title="Harmonies from this color">✦</button>
+        <button class="x" title="Remove">✕</button>
+      </div>
+      <div class="vals">${["hex", "rgb", "srgb", "lin", settings.acescg && "aces", "hsv"].filter(Boolean).map(btn).join("")}</div>
+    </div>`;
+}
+
+function renderList() {
+  const list = $("#list");
+  $("#count").textContent = state.palette.length;
+  if (!state.palette.length) {
+    list.innerHTML = `<div class="empty-list">No colors yet.<br>Load an image, hit Extract or click to drop pins.</div>`;
+    return;
+  }
+  list.innerHTML = "";
+  for (const c of state.palette) {
+    const row = document.createElement("div");
+    row.className = "row" + (c.id === state.selId ? " sel" : "") + (c.id === harm.baseId ? " harmbase" : ""); row.dataset.id = c.id; row.draggable = false;
+    row.innerHTML = rowHTML(c);
+    list.appendChild(row);
+  }
+}
+function updateRow(c) {
+  const row = $(`.row[data-id="${c.id}"]`);
+  if (!row) return;
+  const v = values(c);
+  $(".chip", row).style.background = toHex(c);
+  $$(".val", row).forEach(b => $(".v", b).textContent = v[b.dataset.fmt].show);
+}
+function render() { assignNames(); renderMarkers(); renderList(); renderBlocks(); }
+
+// ---------------- Blocks view (palette-quantized image) ----------------
+// Each pixel/cell is snapped to the nearest palette color (auto + pins) in CIELAB,
+// then an optional majority filter eats small specks so big blobs take over.
+let liveRaf = 0;
+function liveExtract() { cancelAnimationFrame(liveRaf); liveRaf = requestAnimationFrame(extract); }
+const view = { mode: "orig", base: null };
+const BLOCK_RES = 720;
+function blockBase() {
+  if (view.base && view.base.src === state.src) return view.base;
+  const sc = Math.min(1, BLOCK_RES / Math.max(state.src.w, state.src.h));
+  const W = Math.max(1, Math.round(state.src.w * sc)), H = Math.max(1, Math.round(state.src.h * sc));
+  const cv = document.createElement("canvas"); cv.width = W; cv.height = H;
+  const cx = cv.getContext("2d", { willReadFrequently: true });
+  cx.imageSmoothingQuality = "high"; cx.drawImage(state.src.canvas, 0, 0, W, H);
+  const d = cx.getImageData(0, 0, W, H).data;
+  const lin = new Float32Array(W * H * 3), alpha = new Uint8Array(W * H);
+  for (let p = 0, i = 0; p < W * H; p++, i += 4) { lin[p*3] = S2L[d[i]]; lin[p*3+1] = S2L[d[i+1]]; lin[p*3+2] = S2L[d[i+2]]; alpha[p] = d[i+3]; }
+  return (view.base = { src: state.src, W, H, lin, alpha });
+}
+function blocksGrid() {
+  const b = blockBase(), P = state.palette;
+  const s = +$("#blockSize").value, passes = +$("#cleanup").value;
+  const gw = Math.ceil(b.W / s), gh = Math.ceil(b.H / s);
+  const labs = P.map(c => rgbToLab(c.r, c.g, c.b));
+  const lut = new Int16Array(32768).fill(-1);
+  const nearest = (r, g, bb) => {
+    const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (bb >> 3);
+    if (lut[key] < 0) {
+      const lab = rgbToLab((r & 248) + 4, (g & 248) + 4, (bb & 248) + 4);
+      let bi = 0, bd = Infinity;
+      for (let j = 0; j < labs.length; j++) { const dd = dist2(lab, labs[j]); if (dd < bd) { bd = dd; bi = j; } }
+      lut[key] = bi;
+    }
+    return lut[key];
+  };
+  let idx = new Int16Array(gw * gh);
+  for (let gy = 0; gy < gh; gy++) for (let gx = 0; gx < gw; gx++) {
+    let r = 0, g = 0, bl = 0, n = 0;
+    const y1 = Math.min(b.H, (gy + 1) * s), x1 = Math.min(b.W, (gx + 1) * s);
+    for (let y = gy * s; y < y1; y++) for (let x = gx * s; x < x1; x++) {
+      const p = y * b.W + x; if (b.alpha[p] < 128) continue;
+      r += b.lin[p*3]; g += b.lin[p*3+1]; bl += b.lin[p*3+2]; n++;
+    }
+    idx[gy * gw + gx] = n ? nearest(Math.round(l2s(r/n)), Math.round(l2s(g/n)), Math.round(l2s(bl/n))) : -1;
+  }
+  // Majority (mode) filter, 3x3
+  const K = P.length, votes = new Int32Array(K + 1);
+  for (let it = 0; it < passes; it++) {
+    const out = new Int16Array(idx.length);
+    for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) {
+      const cur = idx[y * gw + x];
+      if (cur < 0) { out[y * gw + x] = -1; continue; }
+      votes.fill(0);
+      for (let yy = Math.max(0, y - 1); yy <= Math.min(gh - 1, y + 1); yy++)
+        for (let xx = Math.max(0, x - 1); xx <= Math.min(gw - 1, x + 1); xx++) { const v = idx[yy * gw + xx]; if (v >= 0) votes[v]++; }
+      let best = cur, bv = votes[cur];
+      for (let k = 0; k < K; k++) if (votes[k] > bv) { bv = votes[k]; best = k; }
+      out[y * gw + x] = best;
+    }
+    idx = out;
+  }
+  const cv = document.createElement("canvas"); cv.width = gw; cv.height = gh;
+  const cx = cv.getContext("2d"); const im = cx.createImageData(gw, gh);
+  for (let p = 0; p < gw * gh; p++) {
+    const k = idx[p]; if (k < 0) continue;
+    const c = P[k]; im.data[p*4] = c.r; im.data[p*4+1] = c.g; im.data[p*4+2] = c.b; im.data[p*4+3] = 255;
+  }
+  cx.putImageData(im, 0, 0);
+  return { canvas: cv, gw, gh };
+}
+// Paint the blocks grid at base resolution, cells aligned to the image grid.
+function paintBlocks(out) {
+  const g = blocksGrid(), b = blockBase(), s = +$("#blockSize").value;
+  out.width = b.W; out.height = b.H;
+  const cx = out.getContext("2d"); cx.imageSmoothingEnabled = false;
+  cx.clearRect(0, 0, b.W, b.H);
+  cx.drawImage(g.canvas, 0, 0, g.gw * s, g.gh * s);
+  return out;
+}
+function renderBlocks() {
+  const on = view.mode === "blocks" && state.imgLoaded && state.palette.length > 0;
+  const val = view.mode === "value" && state.imgLoaded;
+  $("#imgBox").classList.toggle("blocks", on);
+  $("#imgBox").classList.toggle("value", val);
+  if (on) paintBlocks($("#blockCanvas"));
+  else if (val) paintValue($("#blockCanvas"));
+  renderValues();
+  renderHarmonies();
+}
+// Grayscale by perceptual lightness (OKLab L of a gray = cbrt(Y)).
+// Tones: posterize into n groups split evenly across the image's own value
+// range (2nd-98th percentile), shown as evenly spaced greys (notan-style read).
+function paintValue(out) {
+  const b = blockBase(), n = +$("#valTones").value, N = b.W * b.H;
+  out.width = b.W; out.height = b.H;
+  const Ls = new Float32Array(N), hist = new Uint32Array(256);
+  for (let p = 0; p < N; p++) {
+    const L = Math.cbrt(0.2126 * b.lin[p*3] + 0.7152 * b.lin[p*3+1] + 0.0722 * b.lin[p*3+2]);
+    Ls[p] = L; hist[Math.min(255, (L * 255) | 0)]++;
+  }
+  let lo = 0, hi = 1;
+  if (n) {
+    let acc = 0; const a = N * 0.02, z = N * 0.98;
+    for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= a) { lo = i / 255; break; } }
+    acc = 0;
+    for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= z) { hi = (i + 1) / 255; break; } }
+    if (hi - lo < 0.05) { lo = 0; hi = 1; }
+  }
+  const cx = out.getContext("2d"), im = cx.createImageData(b.W, b.H);
+  for (let p = 0; p < N; p++) {
+    let L = Ls[p];
+    if (n) {
+      const k = Math.min(n - 1, Math.max(0, Math.floor((L - lo) / (hi - lo) * n)));
+      L = 0.12 + 0.83 * k / (n - 1);                  // groups shown as evenly spaced greys
+    }
+    const g = l2s(L * L * L);
+    im.data[p*4] = im.data[p*4+1] = im.data[p*4+2] = g; im.data[p*4+3] = 255;
+  }
+  cx.putImageData(im, 0, 0);
+  return out;
+}
+let blocksRaf = 0;
+const liveBlocks = () => { cancelAnimationFrame(blocksRaf); blocksRaf = requestAnimationFrame(renderBlocks); };
+function setView(m) {
+  view.mode = m;
+  $("#vOrig").classList.toggle("on", m === "orig"); $("#vBlocks").classList.toggle("on", m === "blocks"); $("#vValue").classList.toggle("on", m === "value");
+  $("#blockOpts").classList.toggle("dim", m !== "blocks");
+  $("#blockOpts").style.display = m === "value" ? "none" : ""; $("#valueOpts").style.display = m === "value" ? "" : "none";
+  $("#valueOpts").classList.toggle("dim", m !== "value");
+  if (m === "value") showValues(true);
+  renderBlocks();
+}
+const byId = id => state.palette.find(c => c.id === +id);
+
+function select(id, scroll) {
+  state.selId = id == null ? null : +id;
+  $$(".pin").forEach(e => e.classList.toggle("sel", +e.dataset.id === state.selId));
+  $$(".row").forEach(e => e.classList.toggle("sel", +e.dataset.id === state.selId));
+  if (scroll && state.selId != null) $(`.row[data-id="${state.selId}"]`)?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function suppressAuto(c) { if (c.source === "auto") state.suppressed.push(rgbToLab(c.r, c.g, c.b)); }
+function removeColor(id) {
+  const i = state.palette.findIndex(c => c.id === +id); if (i < 0) return;
+  suppressAuto(state.palette[i]);
+  state.palette.splice(i, 1);
+  if (state.selId === +id) {
+    const next = state.palette[Math.min(i, state.palette.length - 1)];
+    state.selId = next ? next.id : null;   // keep selection so Del can be pressed repeatedly
+  }
+  render();
+}
+
+function setHover(id) {
+  state.hoverId = id ? +id : null;
+  $$(".pin").forEach(e => e.classList.toggle("hl", +e.dataset.id === state.hoverId));
+  $$(".row").forEach(e => e.classList.toggle("hl", +e.dataset.id === state.hoverId));
+}
+
+// ---------------- List interactions ----------------
+$("#list").addEventListener("click", e => {
+  const row = e.target.closest(".row"); if (!row) return;
+  const c = byId(row.dataset.id);
+  if (!e.target.closest(".x")) select(c.id);
+  const val = e.target.closest(".val");
+  if (val) {
+    const v = values(c)[val.dataset.fmt];
+    copyText(v.copy, `${v.k}  ${v.copy}`);
+    val.classList.add("copied"); setTimeout(() => val.classList.remove("copied"), 500);
+  } else if (e.target.closest(".chip")) {
+    copyText(toHex(c));
+  } else if (e.target.closest(".hx")) {
+    openHarmonies(c.id);
+  } else if (e.target.closest(".x")) {
+    removeColor(c.id);
+  }
+});
+$("#list").addEventListener("input", e => {
+  if (!e.target.matches("input.name")) return;
+  const c = byId(e.target.closest(".row").dataset.id);
+  c.name = e.target.value.trim(); c.userNamed = c.name !== "";
+
+});
+// Empty name field -> get an auto name back
+$("#list").addEventListener("focusout", e => { if (e.target.matches("input.name") && !byId(e.target.closest(".row").dataset.id).userNamed) render(); });
+$("#list").addEventListener("mouseover", e => { const r = e.target.closest(".row"); setHover(r ? r.dataset.id : null); });
+$("#list").addEventListener("mouseleave", () => setHover(null));
+
+// Reorder by dragging the grip
+let dragRow = null;
+$("#list").addEventListener("pointerdown", e => {
+  if (!e.target.closest(".grip")) return;
+  const row = e.target.closest(".row"); row.draggable = true; dragRow = row;
+});
+$("#list").addEventListener("dragstart", e => { if (dragRow) { dragRow.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; } });
+$("#list").addEventListener("dragover", e => {
+  if (!dragRow) return; e.preventDefault();
+  $$(".row").forEach(r => r.classList.remove("dropabove"));
+  const over = e.target.closest(".row"); if (over && over !== dragRow) over.classList.add("dropabove");
+});
+$("#list").addEventListener("drop", e => {
+  if (!dragRow) return; e.preventDefault();
+  const over = e.target.closest(".row");
+  const from = state.palette.findIndex(c => c.id === +dragRow.dataset.id);
+  const item = state.palette.splice(from, 1)[0];
+  const to = over ? state.palette.findIndex(c => c.id === +over.dataset.id) : state.palette.length;
+  state.palette.splice(to < 0 ? state.palette.length : to, 0, item);
+  render();
+});
+$("#list").addEventListener("dragend", () => { dragRow = null; renderList(); });
+
+// ---------------- Image interactions (pins + loupe) ----------------
+const box = $("#imgBox");
+let dragPin = null;
+function uvFromEvent(e) {
+  const r = box.getBoundingClientRect();
+  return { u: clamp((e.clientX - r.left) / r.width, 0, 0.99999), v: clamp((e.clientY - r.top) / r.height, 0, 0.99999) };
+}
+let dragStart = null, dragMoved = false;
+box.addEventListener("pointerdown", e => {
+  if (e.button !== 0 || !state.imgLoaded) return;
+  const pinEl = e.target.closest(".pin");
+  let c;
+  if (pinEl) { c = byId(pinEl.dataset.id); dragMoved = false; }
+  else {
+    // Empty area: drop a new manual pin (and keep dragging it to fine-tune)
+    const { u, v } = uvFromEvent(e);
+    const col = sampleAt(u, v, +$("#radius").value);
+    state.pinCounter++;
+    c = { id: state.nextId++, source: "pin", ...col, name: "", u, v };
+    state.palette.push(c);
+    state.selId = c.id;
+    render();
+    dragMoved = true;
+  }
+  select(c.id, true);
+  dragPin = c; dragStart = { x: e.clientX, y: e.clientY };
+  box.setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+box.addEventListener("pointermove", e => {
+  if (!state.imgLoaded) return;
+  drawLoupe(e);
+  if (!dragPin) { const m = e.target.closest(".pin"); setHover(m ? m.dataset.id : null); return; }
+  if (!dragMoved) {
+    if (Math.hypot(e.clientX - dragStart.x, e.clientY - dragStart.y) < 3) return;  // click, not drag
+    dragMoved = true;
+    if (dragPin.source === "auto") {
+      // Moving an auto pin makes it manual so re-extract won't wipe it
+      dragPin.source = "pin";
+      const row = $(`.row[data-id="${dragPin.id}"]`);
+      if (row) row.innerHTML = rowHTML(dragPin);
+      $(`#markers [data-id="${dragPin.id}"]`)?.classList.remove("auto");
+    }
+  }
+  const { u, v } = uvFromEvent(e);
+  Object.assign(dragPin, { u, v }, sampleAt(u, v, +$("#radius").value));
+  const el = $(`#markers [data-id="${dragPin.id}"]`);
+  if (el) { el.style.left = u * 100 + "%"; el.style.top = v * 100 + "%"; el.style.background = toHex(dragPin); el.style.color = inkFor(dragPin); }
+  if (!dragPin.userNamed) {
+    const taken = new Set(state.palette.filter(c => c !== dragPin).map(c => c.name));
+    dragPin.name = nameFor(dragPin, taken);
+    const inp = $(`.row[data-id="${dragPin.id}"] input.name`); if (inp) inp.value = dragPin.name;
+  }
+  updateRow(dragPin);
+  if (view.mode === "blocks") liveBlocks();
+  setHover(dragPin.id);
+});
+box.addEventListener("pointerup", e => {
+  if (!dragPin) return;
+  box.releasePointerCapture(e.pointerId);
+  dragPin = null;
+  // A new or moved pin may now duplicate an auto color: re-run extraction to drop it
+  if (dragMoved && $("#dedupe").checked && state.palette.some(c => c.source === "auto")) extract();
+  else render();
+});
+box.addEventListener("pointerleave", () => { if (!dragPin) { $("#loupe").style.display = "none"; setHover(null); } });
+box.addEventListener("contextmenu", e => {
+  e.preventDefault();
+  const pinEl = e.target.closest(".pin"); if (!pinEl) return;
+  removeColor(pinEl.dataset.id);
+});
+
+function drawLoupe(e) {
+  const lp = $("#loupe");
+  if (!$("#showLoupe").checked) { lp.style.display = "none"; return; }
+  const { u, v } = uvFromEvent(e);
+  const { w, h, canvas } = state.src;
+  const px = Math.floor(u * w), py = Math.floor(v * h);
+  const N = 15, Z = 8; // 15x15 px at 8x
+  const ctx = lp.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, 120, 140);
+  ctx.drawImage(canvas, px - 7, py - 7, N, N, 0, 0, N * Z, N * Z);
+  const rad = +$("#radius").value;
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 1;
+  ctx.strokeRect(7 * Z - rad * Z + 0.5, 7 * Z - rad * Z + 0.5, (rad * 2 + 1) * Z - 1, (rad * 2 + 1) * Z - 1);
+  ctx.strokeStyle = "#000";
+  ctx.strokeRect(7 * Z - rad * Z - 0.5, 7 * Z - rad * Z - 0.5, (rad * 2 + 1) * Z + 1, (rad * 2 + 1) * Z + 1);
+  const c = sampleAt(u, v, rad);
+  ctx.fillStyle = toHex(c); ctx.fillRect(0, 120, 120, 20);
+  ctx.fillStyle = inkFor(c); ctx.font = "bold 12px ui-monospace, Consolas, monospace"; ctx.textAlign = "center";
+  ctx.fillText(toHex(c), 60, 134);
+  const st = $("#stage").getBoundingClientRect();
+  let x = e.clientX - st.left + 22, y = e.clientY - st.top + 22;
+  if (x + 120 > st.width) x -= 164; if (y + 140 > st.height) y -= 184;
+  lp.style.left = x + "px"; lp.style.top = y + "px"; lp.style.display = "block";
+}
+
+// ---------------- Toolbar ----------------
+for (const id of ["kCount", "mergeDE", "minPct"]) {
+  const el = $("#" + id);
+  el.addEventListener("input", () => { $("#" + id + "V").textContent = el.value; liveExtract(); });
+}
+$("#snap").addEventListener("change", extract);
+$("#dedupe").addEventListener("change", () => { $("#mergeDE").disabled = !$("#dedupe").checked; extract(); });
+$("#vOrig").addEventListener("click", () => setView("orig"));
+$("#vBlocks").addEventListener("click", () => setView("blocks"));
+$("#vValue").addEventListener("click", () => setView("value"));
+$("#valTones").addEventListener("change", renderBlocks);
+for (const id of ["blockSize", "cleanup"]) {
+  const el = $("#" + id);
+  el.addEventListener("input", () => { $("#" + id + "V").textContent = el.value; liveBlocks(); });
+}
+$("#btnBlocksPng").addEventListener("click", () => {
+  if (!need()) return;
+  const bc = paintBlocks(document.createElement("canvas")), cv = document.createElement("canvas");
+  cv.width = state.src.w; cv.height = state.src.h;
+  const cx = cv.getContext("2d"); cx.imageSmoothingEnabled = false;
+  cx.drawImage(bc, 0, 0, cv.width, cv.height);
+  cv.toBlob(b => download(b, base() + "_blocks.png"), "image/png");
+});
+$("#btnExtract").addEventListener("click", () => extract(true));
+$("#showMarkers").addEventListener("change", renderMarkers);
+$("#copyStyle").addEventListener("change", renderList);
+$("#decimals").addEventListener("change", renderList);
+$("#btnAutoName").addEventListener("click", () => { state.palette.forEach(c => c.userNamed = false); render(); toast("Names refreshed"); });
+// Clear menu: remove colors by where they came from
+const CLEAR_GROUPS = {
+  auto: c => c.source === "auto",
+  pins: c => c.source === "pin" && c.u != null,
+  loaded: c => c.u == null,
+  all: () => true,
+};
+$("#btnClear").addEventListener("click", e => {
+  e.stopPropagation();
+  const m = $("#clearMenu");
+  $$("#clearMenu [data-clear]").forEach(b => { const n = state.palette.filter(CLEAR_GROUPS[b.dataset.clear]).length; $("b", b).textContent = n; b.disabled = !n; });
+  m.hidden = !m.hidden;
+  if (!m.hidden) {
+    // Place next to the button, always inside the window (opens up, or down if no room)
+    const r = $("#btnClear").getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight, pad = 8;
+    m.style.left = clamp(r.left, pad, innerWidth - mw - pad) + "px";
+    m.style.top = (r.top - mh - 6 >= pad ? r.top - mh - 6 : Math.min(r.bottom + 6, innerHeight - mh - pad)) + "px";
+  }
+});
+window.addEventListener("resize", () => { $("#clearMenu").hidden = true; });
+document.addEventListener("click", e => { if (!e.target.closest(".clearwrap")) $("#clearMenu").hidden = true; });
+$("#clearMenu").addEventListener("click", e => {
+  const b = e.target.closest("[data-clear]"); if (!b || b.disabled) return;
+  const g = b.dataset.clear, test = CLEAR_GROUPS[g];
+  const n = state.palette.filter(test).length;
+  if (g === "all") { state.palette = []; state.pinCounter = 0; state.selId = null; state.suppressed = []; }
+  else {
+    if (g === "auto") state.palette.forEach(suppressAuto);
+    state.palette = state.palette.filter(c => !test(c));
+    if (state.selId != null && !byId(state.selId)) state.selId = null;
+  }
+  $("#clearMenu").hidden = true;
+  render();
+  toast(`Removed ${n} color${n === 1 ? "" : "s"}`);
+});
+
+$("#btnOpen").addEventListener("click", () => (activeModule && activeModule.id === "video" ? $("#scFile") : $("#file")).click());
+$("#file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+const stage = $("#stage");
+stage.addEventListener("dragover", e => { if (dragRow || !e.dataTransfer.types.includes("Files") || e.target.closest("#history")) return; e.preventDefault(); stage.classList.add("dragover"); });
+stage.addEventListener("dragleave", () => stage.classList.remove("dragover"));
+stage.addEventListener("drop", e => { if (e.target.closest("#history")) return; e.preventDefault(); stage.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
+window.addEventListener("paste", e => {
+  if (activeModule && activeModule.id !== "image") return;
+  const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
+  if (item) loadFile(item.getAsFile());
+});
+window.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $(".modal.open") && !e.target.closest(".hcard")) { $$(".modal.open").forEach(m => m.classList.remove("open")); return; }
+  if (e.target.matches("input,select,textarea")) return;
+  const inImage = !activeModule || activeModule.id === "image";
+  if (inImage && (e.key === "e" || e.key === "E")) extract(true);
+  if (inImage && (e.key === "b" || e.key === "B")) setView(view.mode === "blocks" ? "orig" : "blocks");
+  if (inImage && (e.key === "v" || e.key === "V")) setView(view.mode === "value" ? "orig" : "value");
+  if ("hHlL".includes(e.key) && !e.ctrlKey && !e.metaKey && !$(".modal.open")) toggleHistory();   // L = Library (H kept as alias)
+  if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !$(".modal.open")) quickCopyCard();
+  if (e.key === "Escape") { const open = $$(".modal.open"); if (open.length) open.forEach(m => m.classList.remove("open")); else select(null); }
+  if ((e.key === "Delete" || e.key === "Backspace") && state.selId != null && !$(".modal.open")) { e.preventDefault(); removeColor(state.selId); }
+});
+
+// ---------------- Copy all / exports ----------------
+function need() { if (!state.palette.length) { toast("Palette is empty"); return false; } return true; }
+const slug = s => s.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "color";
+
+function buildText(fmt) {
+  const P = state.palette, d = dec();
+  const lin = c => [c.r, c.g, c.b].map(v => S2L[v].toFixed(d));
+  const aces = c => acescg(c).map(v => v.toFixed(d));
+  switch (fmt) {
+    case "hex":  return P.map(toHex).join("\n");
+    case "rgb":  return P.map(c => values(c).rgb.copy).join("\n");
+    case "srgb": return P.map(c => values(c).srgb.copy).join("\n");
+    case "lin":  return P.map(c => values(c).lin.copy).join("\n");
+    case "aces": return P.map(c => values(c).aces.copy).join("\n");
+    case "pyAces": return "# ACEScg (AP1 linear)\npalette = [\n" + P.map(c => `    (${aces(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
+    case "vexAces": return `// ACEScg (AP1 linear)\nvector palette[] = array(\n` + P.map(c => `    set(${aces(c).join(", ")})`).join(",\n") + "\n);";
+    case "pyLin": return "palette = [\n" + P.map(c => `    (${lin(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
+    case "vexLin": return `vector palette[] = array(\n` + P.map(c => `    set(${lin(c).join(", ")})`).join(",\n") + "\n);";
+    case "css":  return ":root {\n" + P.map(c => `  --${slug(c.name)}: ${toHex(c)};`).join("\n") + "\n}";
+    case "json": return JSON.stringify({
+      name: paletteTitle() || state.imgName, generator: `${APP.name} v${APP.version}`,
+      colors: P.map(c => ({
+        name: c.name, hex: toHex(c), rgb: [c.r, c.g, c.b],
+        srgb: [c.r, c.g, c.b].map(v => +(v / 255).toFixed(6)),
+        linear: [c.r, c.g, c.b].map(v => +S2L[v].toFixed(6)),
+        acescg: acescg(c).map(v => +v.toFixed(6)),
+        source: c.source, coverage: c.source === "auto" ? +c.weight.toFixed(4) : null,
+      })),
+    }, null, 2);
+  }
+}
+$("#btnCopyAll").addEventListener("click", () => {
+  if (!need()) return;
+  const sel = $("#copyAllFmt");
+  copyText(buildText(sel.value), `${state.palette.length} colors (${sel.options[sel.selectedIndex].text})`);
+});
+
+function download(blob, name) {
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+const base = () => `${slug(state.imgName)}_palette`;
+function buildGPL() {
+  return `GIMP Palette\nName: ${paletteTitle() || state.imgName}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
+    state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${c.name} ${toHex(c)}`).join("\n") + "\n";
+}
+function buildASE() {
+  // Adobe Swatch Exchange v1.0, big-endian
+  const blocks = state.palette.map(c => {
+    const name = (c.name || toHex(c)) + "\0";
+    const len = 2 + name.length * 2 + 4 + 12 + 2;
+    const buf = new DataView(new ArrayBuffer(6 + len)); let o = 0;
+    buf.setUint16(o, 0x0001); o += 2;          // color entry
+    buf.setUint32(o, len); o += 4;
+    buf.setUint16(o, name.length); o += 2;
+    for (const ch of name) { buf.setUint16(o, ch.charCodeAt(0)); o += 2; }
+    for (const ch of "RGB ") { buf.setUint8(o, ch.charCodeAt(0)); o++; }
+    buf.setFloat32(o, c.r / 255); o += 4; buf.setFloat32(o, c.g / 255); o += 4; buf.setFloat32(o, c.b / 255); o += 4;
+    buf.setUint16(o, 2);                       // normal (not global/spot)
+    return buf.buffer;
+  });
+  const head = new DataView(new ArrayBuffer(12));
+  "ASEF".split("").forEach((ch, i) => head.setUint8(i, ch.charCodeAt(0)));
+  head.setUint16(4, 1); head.setUint16(6, 0); head.setUint32(8, blocks.length);
+  return new Blob([head.buffer, ...blocks], { type: "application/octet-stream" });
+}
+
+// ---------------- PNG card ----------------
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+}
+// Returns [{ t, bold, dim, sans }] for a swatch label block
+function labelLines(c, mode, i, names) {
+  const d = dec(), hex = toHex(c), out = [];
+  if (names) out.push({ t: `${i + 1}  ${c.name}`, bold: true, sans: true });
+  if (mode === "none") return out;
+  out.push({ t: hex, bold: !names });
+  if (mode === "hexlin") out.push({ t: [c.r, c.g, c.b].map(v => S2L[v].toFixed(d)).join(" "), dim: true });
+  if (mode === "hexaces") out.push({ t: "ACEScg " + acescg(c).map(v => v.toFixed(d)).join(" "), dim: true });
+  if (mode === "hexrgb") out.push({ t: `${c.r} ${c.g} ${c.b}`, dim: true });
+  return out;
+}
+function drawLabel(ctx, L, x, y, fs, maxW, fg, fg2, mono, sans, lh) {
+  ctx.textBaseline = "top";
+  L.forEach((l, li) => {
+    ctx.fillStyle = l.dim ? fg2 : fg;
+    ctx.font = `${l.bold ? 700 : 400} ${l.dim ? fs * 0.8 : fs}px ${l.sans ? sans : mono}`;
+    ctx.fillText(l.t, x, y + li * lh, maxW);
+  });
+}
+// ---- Card extras (Harmonies / Values), mirrored from the open panel sections ----
+function harmCardData() {
+  const base = harm.baseId != null ? byId(harm.baseId) : null;
+  if ($("#harmSec").hidden || (!base && !harm.whole)) return null;
+  return { title: harm.whole ? "Harmonies · whole palette" : `Harmonies · from ${base.name}`, rows: harm.whole ? wholeSets() : harmonySets(base) };
+}
+function valCardData() {
+  if (!valUI.open || !state.palette.length) return null;
+  const P = state.palette.map(c => ({ c, L: oklab(c.r, c.g, c.b)[0] })).sort((a, b) => a.L - b.L);
+  const warn = [];
+  for (let i = 1; i < P.length; i++) if (P[i].L - P[i - 1].L < 0.03) warn.push(`${P[i - 1].c.name} and ${P[i].c.name} read the same in grayscale`);
+  return { items: P, warn: warn.slice(0, 3) };
+}
+function autoCardExtras() {
+  const h = harmCardData(), v = valCardData();
+  $("#cHarmWrap").style.display = h ? "" : "none"; $("#cHarm").checked = !!h;
+  $("#cValsWrap").style.display = v ? "" : "none"; $("#cVals").checked = !!v;
+  if (h) $("#cHarmLbl").textContent = h.title.replace("Harmonies · ", "Harmonies (") + ")";
+  $("#cExtrasNote").textContent = h || v ? "" : "Open ✦ Harmonies or ◐ Values to add them here.";
+}
+function renderCard() {
+  const cv = $("#cardCanvas"), ctx = cv.getContext("2d");
+  const P = state.palette, dark = $("#cTheme").value === "dark";
+  const bg = dark ? "#141518" : "#f4f1ea", fg = dark ? "#ece9e3" : "#1c1c1c", fg2 = dark ? "#8b8f96" : "#6b6a66";
+  const title = paletteTitle().trim(), layout = $("#cLayout").value, labels = $("#cLabels").value;
+  const imgMode = $("#cImgMode").value, withImg = $("#cImgOn").checked && state.imgLoaded, credit = $("#cCredit").checked;
+  // Coverage widths only make sense when every color has a coverage value (auto-extracted)
+  const canProp = P.length > 0 && P.every(c => c.source === "auto" && c.weight != null);
+  $("#cProp").disabled = !canProp;
+  $("#cPropWrap").classList.toggle("off", !canProp);
+  $("#cPropWrap").title = canProp ? "Swatch width follows how much of the image each color covers" : "Only for auto-extracted colors (manual pins, Library and links have no coverage)";
+  $("#cImgModeWrap").style.display = withImg ? "" : "none";
+  $("#cImgOn").disabled = !state.imgLoaded;
+  const W = 1600, pad = 64, inner = W - pad * 2, mono = "ui-monospace, Consolas, 'SF Mono', Menlo, monospace";
+  const sans = "system-ui, 'Segoe UI', Roboto, sans-serif";
+
+  // --- measure ---
+  let H = pad;
+  const titleH = title ? 70 : 0; H += titleH;
+  let imgH = 0;
+  if (withImg) { imgH = Math.min(760, inner * state.src.h / state.src.w); H += imgH + 36; }
+  const n = P.length;
+  let stripH = 0, cols = 0, cardW = 0, cardH = 0, rows = 0, gap = 20;
+  const names = $("#cNames").checked;
+  const nLab = labelLines({ r: 0, g: 0, b: 0, name: "" }, labels, 0, names).length;
+  if (layout === "strip") { stripH = 300; H += stripH + (nLab ? 24 + nLab * 30 : 0); }
+  else { cols = Math.min(n, n <= 4 ? n : n <= 6 ? 3 : n <= 10 ? 5 : 6); rows = Math.ceil(n / cols); cardW = (inner - gap * (cols - 1)) / cols; cardH = cardW * 0.8 + (nLab ? 20 + nLab * 28 : 0); H += rows * cardH + (rows - 1) * gap; }
+  // Extras
+  const hx = $("#cHarm").checked ? harmCardData() : null, vx = $("#cVals").checked ? valCardData() : null;
+  const SEC_T = 54, HROW = 74, VBLK = 56;
+  if (hx) H += 44 + SEC_T + hx.rows.length * HROW;
+  if (vx) H += 44 + SEC_T + VBLK * 2 + 30 + vx.warn.length * 28;
+  const footH = credit ? 70 : 32; H += footH;
+
+  cv.width = W; cv.height = Math.round(H);
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+  let y = pad;
+  if (title) { ctx.fillStyle = fg; ctx.font = `700 44px ${sans}`; ctx.textBaseline = "top"; ctx.fillText(title, pad, y); y += titleH; }
+  if (withImg) {
+    const iw = imgH * state.src.w / state.src.h, ix = pad + (inner - iw) / 2;
+    ctx.save(); roundRect(ctx, ix, y, iw, imgH, 14); ctx.clip();
+    if (imgMode === "blocks" && state.palette.length) { const bc = paintBlocks(document.createElement("canvas")); ctx.imageSmoothingEnabled = false; ctx.drawImage(bc, ix, y, iw, imgH); ctx.imageSmoothingEnabled = true; }
+    else ctx.drawImage(state.src.canvas, ix, y, iw, imgH);
+    ctx.restore();
+    y += imgH + 36;
+  }
+  if (layout === "strip") {
+    let widths;
+    if ($("#cProp").checked && canProp) {
+      const ws = P.map(c => Math.max(c.weight, 0.04)), s = ws.reduce((a, b) => a + b, 0);
+      widths = ws.map(w => w / s * inner);
+    } else widths = P.map(() => inner / n);
+    ctx.save(); roundRect(ctx, pad, y, inner, stripH, 14); ctx.clip();
+    let x = pad;
+    P.forEach((c, i) => { ctx.fillStyle = toHex(c); ctx.fillRect(Math.floor(x), y, Math.ceil(widths[i]) + 1, stripH); x += widths[i]; });
+    ctx.restore();
+    y += stripH + 24;
+    x = pad;
+    P.forEach((c, i) => {
+      const cw = widths[i];
+      drawLabel(ctx, labelLines(c, labels, i, names), x + 2, y, clamp(cw / 6.2, 11, 22), cw - 8, fg, fg2, mono, sans, 30);
+      x += cw;
+    });
+    y += nLab ? nLab * 30 : 0;
+  } else {
+    P.forEach((c, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      const x = pad + col * (cardW + gap), yy = y + row * (cardH + gap);
+      ctx.fillStyle = toHex(c); roundRect(ctx, x, yy, cardW, cardW * 0.8, 12); ctx.fill();
+      drawLabel(ctx, labelLines(c, labels, i, names), x + 2, yy + cardW * 0.8 + 14, clamp(cardW / 9, 12, 24), cardW - 4, fg, fg2, mono, sans, 28);
+    });
+    y += rows * cardH + (rows - 1) * gap;
+  }
+  const secHead = t => {
+    y += 22; ctx.fillStyle = dark ? "#2a2d33" : "#dcd7cc"; ctx.fillRect(pad, y, inner, 1); y += 22;
+    ctx.fillStyle = fg; ctx.font = `700 26px ${sans}`; ctx.textBaseline = "top"; ctx.fillText(t, pad, y); y += SEC_T;
+  };
+  if (hx) {
+    secHead(hx.title);
+    const lblW = 230, sw = inner - lblW;
+    hx.rows.forEach(([label, cs]) => {
+      ctx.fillStyle = fg2; ctx.font = `500 20px ${sans}`; ctx.textBaseline = "middle"; ctx.fillText(label, pad, y + 22);
+      const g = 8, w = (sw - g * (cs.length - 1)) / cs.length;
+      cs.forEach((c, i) => {
+        const x = pad + lblW + i * (w + g);
+        ctx.fillStyle = toHex(c); roundRect(ctx, x, y, w, 44, 8); ctx.fill();
+        ctx.fillStyle = fg2; ctx.font = `400 15px ${mono}`; ctx.textBaseline = "top"; ctx.fillText(toHex(c), x + 2, y + 50, w - 4);
+      });
+      y += HROW;
+    });
+  }
+  if (vx) {
+    secHead("Values · dark → light");
+    const n2 = vx.items.length, w = inner / n2;
+    ctx.save(); roundRect(ctx, pad, y, inner, VBLK * 2, 12); ctx.clip();
+    vx.items.forEach((p, i) => {
+      const x = pad + i * w, g = Math.round(l2s(p.L ** 3));
+      ctx.fillStyle = toHex(p.c); ctx.fillRect(Math.floor(x), y, Math.ceil(w) + 1, VBLK);
+      ctx.fillStyle = `rgb(${g},${g},${g})`; ctx.fillRect(Math.floor(x), y + VBLK, Math.ceil(w) + 1, VBLK);
+    });
+    ctx.restore();
+    y += VBLK * 2 + 6;
+    ctx.fillStyle = fg2; ctx.font = `400 15px ${mono}`; ctx.textBaseline = "top"; ctx.textAlign = "center";
+    vx.items.forEach((p, i) => ctx.fillText(`${p.c.name} ${Math.round(p.L * 100)}`, pad + (i + 0.5) * w, y, w - 6));
+    ctx.textAlign = "left"; y += 24;
+    ctx.fillStyle = "#d9a441"; ctx.font = `500 18px ${sans}`;
+    vx.warn.forEach(t => { ctx.fillText("⚠ " + t, pad, y); y += 28; });
+  }
+  if (credit) {
+    ctx.textBaseline = "alphabetic"; ctx.font = `500 18px ${sans}`; ctx.fillStyle = fg2;
+    ctx.textAlign = "left"; ctx.fillText(`${n} colors`, pad, H - pad / 2 - 4);
+    ctx.textAlign = "right"; ctx.fillText(`${APP.name} · @Msouza3d · kumodot.art`, W - pad, H - pad / 2 - 4);
+    ctx.textAlign = "left";
+  }
+}
+$$("#paneCard input, #paneCard select").forEach(el => el.addEventListener("input", renderCard));
+// Include the image only when the palette came from it (auto or pins placed on it).
+// Palettes loaded from History or a link default to a palette-only card.
+function autoCardImage() {
+  autoCardExtras();
+  const fromImage = state.imgLoaded && state.palette.some(c => c.u != null);
+  $("#cImgOn").checked = fromImage;
+  $("#cImgNote").textContent = !state.imgLoaded ? "No image loaded."
+    : fromImage ? ""
+    : `Image off: palette came from ${state.palette.some(c => c.origin === "video") ? "the Video module" : state.palette.some(c => c.origin === "history") ? "the Library" : "a link"}.`;
+}
+$("#cImgOn").addEventListener("change", () => { $("#cImgNote").textContent = ""; });
+$("#btnCardDl").addEventListener("click", () => $("#cardCanvas").toBlob(b => download(b, base() + "_card.png"), "image/png"));
+// Copy the card as PNG. Passing a Promise to ClipboardItem keeps the user gesture
+// alive while the canvas encodes. Falls back to a download if the browser blocks it.
+function copyCardImage() {
+  const blobP = new Promise(res => $("#cardCanvas").toBlob(res, "image/png"));
+  try {
+    navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })])
+      .then(() => toast("Card copied: paste in Slack, Teams, Figma..."))
+      .catch(() => blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); }));
+  } catch {
+    blobP.then(b => { download(b, base() + "_card.png"); toast("Browser blocked image copy: downloaded the PNG instead"); });
+  }
+}
+$("#btnCardCopy").addEventListener("click", copyCardImage);
+function quickCopyCard() {
+  if (!need()) return;
+  autoCardImage(); renderCard(); copyCardImage();
+}
+$("#btnQuickCard").addEventListener("click", quickCopyCard);
+
+// ---------------- Share (Markdown / Slack / plain / link) ----------------
+const paletteTitle = () => state.title != null ? state.title : state.imgName;
+let shareFmt = "card";
+const PUBLIC_URL = "https://kumodot.github.io/Chromadrop/";
+function shareLink() {
+  const P = state.palette;
+  const q = new URLSearchParams();
+  q.set("p", P.map(c => toHex(c).slice(1)).join("-"));
+  if (P.some(c => c.userNamed)) q.set("n", P.map(c => c.name.replace(/\|/g, "/")).join("|"));
+  if (paletteTitle()) q.set("t", paletteTitle());
+  // Hosted: the folder URL (the app is index.html). Local file (.bat) -> public site, so the link works for anyone
+  const baseUrl = location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/[^/]*$/, "") : PUBLIC_URL;
+  return baseUrl + "#" + q.toString();
+}
+function shareCols(c) {
+  const d = dec(), cols = [];
+  if ($("#sRGB").checked) cols.push(["RGB", `${c.r}, ${c.g}, ${c.b}`]);
+  if ($("#sSRGB").checked) cols.push(["sRGB 0-1", [c.r, c.g, c.b].map(v => (v / 255).toFixed(d)).join(", ")]);
+  if ($("#sLin").checked) cols.push(["Linear 0-1", [c.r, c.g, c.b].map(v => S2L[v].toFixed(d)).join(", ")]);
+  if ($("#sAces").checked) cols.push(["ACEScg", acescg(c).map(v => v.toFixed(d)).join(", ")]);
+  if ($("#sHSV").checked) { const [h, s, v] = rgbToHsv(c.r, c.g, c.b); cols.push(["HSV", `${Math.round(h)}°, ${Math.round(s * 100)}%, ${Math.round(v * 100)}%`]); }
+  return cols;
+}
+function buildShare(fmt) {
+  const P = state.palette, title = paletteTitle() || "Palette";
+  const link = $("#sLink").checked ? shareLink() : null;
+  const credit = `Made with ${APP.name}`;
+  if (fmt === "link") return shareLink();
+  if (fmt === "c4d") return buildC4D();
+  if (fmt === "gpl") return buildGPL();
+  if (fmt === "json" || fmt === "css") return buildText(fmt);
+  if (fmt === "ase") return `Adobe Swatch Exchange (.ase) is a binary file: use Download.
+Opens in Photoshop, Illustrator, InDesign, Affinity, Procreate (import) and more.
+
+${paletteTitle() || "Palette"} · ${P.length} colors
+` + P.map((c, i) => `${String(i + 1).padStart(2)}  ${toHex(c)}  ${c.name}`).join("\n");
+  if (fmt === "md") {
+    const heads = shareCols(P[0]).map(c => c[0]);
+    const head = `| # | Name | HEX | ${heads.map(h => h + " | ").join("")}`.trimEnd();
+    const sep = "|" + " --- |".repeat(3 + heads.length);
+    const rows = P.map((c, i) => {
+      const hex = toHex(c);
+      return `| ${i + 1} | ${c.name} | \`${hex}\` | ${shareCols(c).map(v => "`" + v[1] + "` | ").join("")}`.trimEnd();
+    });
+    return [`## ${title}`, "", `${P.length} colors`, "", head, sep, ...rows, "",
+      link ? `[Open in ${APP.name}](${link})` : `_${credit}_`].join("\n");
+  }
+  if (fmt === "slack") {
+    // Slack mrkdwn has no tables: bold title + aligned code block
+    const nameW = Math.max(4, ...P.map(c => c.name.length));
+    const lines = P.map((c, i) => [String(i + 1).padStart(2), c.name.padEnd(nameW), toHex(c), ...shareCols(c).map(v => v[1].padEnd(v[0] === "RGB" ? 13 : 0))].join("  ").trimEnd());
+    const heads = ["#".padStart(2), "Name".padEnd(nameW), "HEX    ", ...shareCols(P[0]).map(v => v[0].padEnd(v[0] === "RGB" ? 13 : 0))].join("  ").trimEnd();
+    return [`*${title}* · ${P.length} colors`, "```", heads, ...lines, "```", link ? `Open in ${APP.name}: ${link}` : credit].join("\n");
+  }
+  // plain
+  return [`${title} (${P.length} colors)`, "", ...P.map((c, i) => `${i + 1}. ${c.name}  ${toHex(c)}  ${shareCols(c).map(v => `${v[0]} ${v[1]}`).join("  ")}`), "", link || credit].join("\n");
+}
+// Cinema 4D swatch script. Verified on C4D 2025.3: AddColor wants c4d.Vector4d, sRGB 0-1.
+function buildC4D() {
+  const P = state.palette, title = (paletteTitle() || "Chromadrop palette").trim();
+  const glob = $("#c4dCat").value === "global", names = $("#c4dNames").checked;
+  const py = v => (v / 255).toFixed(6);
+  const rows = P.map(c => `    (${py(c.r)}, ${py(c.g)}, ${py(c.b)}),` + (names ? `  # ${c.name} ${toHex(c)}` : ""));
+  return `"""
+Chromadrop -> Cinema 4D swatches
+Palette: ${title} (${P.length} colors)
+Generated by ${APP.name} v${APP.version} - https://kumodot.github.io/Chromadrop/
+
+How to use: Extensions > Script Manager, paste, Execute.
+The palette shows up as a new group in the Color Chooser swatches.
+Tested on Cinema 4D 2025.3.
+"""
+import c4d
+from c4d.modules import colorchooser as cc
+
+GROUP_NAME = ${JSON.stringify(title)}
+USE_GLOBAL = ${glob ? "True" : "False"}  # True = all projects, False = this document only
+
+# sRGB 0-1 (the Color Chooser expects sRGB, not linear)
+COLORS = [
+${rows.join("\n")}
+]
+
+
+def main():
+    cat = c4d.SWATCH_CATEGORY_GLOBAL if USE_GLOBAL else c4d.SWATCH_CATEGORY_DOCUMENT
+    data = cc.ColorSwatchData()
+    data.Load(doc)
+    group = data.AddGroup(cat, GROUP_NAME)
+    if group is None:
+        c4d.gui.MessageDialog("Chromadrop: could not create the swatch group.")
+        return
+    for r, g, b in COLORS:
+        group.AddColor(c4d.Vector4d(r, g, b, 1.0))
+    data.SetGroupAtIndex(data.GetGroupCount(cat) - 1, group, cat)
+    if USE_GLOBAL:
+        try:
+            data.Save(doc, True)  # also write the global swatches
+        except TypeError:
+            data.Save(doc)
+    else:
+        data.Save(doc)
+    c4d.EventAdd()
+    print("Chromadrop: added '%s' with %d colors" % (GROUP_NAME, len(COLORS)))
+
+
+if __name__ == "__main__":
+    main()
+`;
+}
+const SHARE_CATS = {
+  image: [{ fmt: "card", label: "PNG card" }],
+  text: [{ fmt: "md", label: "Markdown" }, { fmt: "slack", label: "Slack" }, { fmt: "plain", label: "Plain text" }, { fmt: "link", label: "Link" }],
+  apps: [{ fmt: "c4d", label: "Cinema 4D" }, { fmt: "ase", label: "ASE" }, { fmt: "gpl", label: "GPL" }, { fmt: "json", label: "JSON" }, { fmt: "css", label: "CSS" }],
+};
+const lastFmt = { image: "card", text: "md", apps: "c4d" };
+let shareCat = "image";
+const DL = { md: [".md", "text/markdown"], c4d: ["_c4d_swatches.py", "text/x-python"], ase: [".ase"], gpl: [".gpl", "text/plain"], json: [".json", "application/json"], css: [".css", "text/css"] };
+function renderShare() {
+  $$("#shareCats button").forEach(b => b.classList.toggle("on", b.dataset.cat === shareCat));
+  const subs = SHARE_CATS[shareCat];
+  $("#shareTabs").innerHTML = subs.length > 1 ? subs.map(t => `<button data-fmt="${t.fmt}" class="${t.fmt === shareFmt ? "on" : ""}">${t.label}</button>`).join("") : "";
+  const isCard = shareFmt === "card";
+  $("#paneCard").classList.toggle("on", isCard); $("#paneText").classList.toggle("on", !isCard);
+  if (isCard) { renderCard(); return; }
+  $("#shareText").value = buildShare(shareFmt);
+  const isC4D = shareFmt === "c4d";
+  $("#c4dOpts").style.display = isC4D ? "" : "none";
+  $("#textOpts").style.display = ["md", "slack", "plain"].includes(shareFmt) ? "" : "none";
+  const dl = DL[shareFmt];
+  $("#btnShareDl").style.display = dl ? "" : "none";
+  if (dl) $("#btnShareDl").textContent = `Download ${dl[0].replace(/^_c4d_swatches/, "")}`;
+  $("#btnShareCopy").style.display = shareFmt === "ase" ? "none" : "";
+  $("#shareNote").textContent =
+    isC4D ? "Cinema 4D: Extensions > Script Manager, paste, Execute. Adds a swatch group named after the palette. Running it twice adds a second group."
+    : shareFmt === "link" ? "Anyone opening this link sees the palette in Chromadrop. The colors live in the link itself, no image is uploaded."
+    : shareFmt === "slack" ? "Paste straight into a Slack message. Add a visual with Image → Copy image."
+    : shareFmt === "md" ? "Notion, GitHub, Obsidian (tables render there). Not for email: use the PNG card or plain text."
+    : shareFmt === "ase" ? "Adobe Swatch Exchange: Photoshop, Illustrator, InDesign, Affinity, Procreate import."
+    : shareFmt === "gpl" ? "GIMP palette: GIMP, Krita, Inkscape, Aseprite."
+    : shareFmt === "json" ? "Full data: HEX, RGB, sRGB, linear and ACEScg per color. Can be imported into the Library."
+    : shareFmt === "css" ? "CSS custom properties, one per color name."
+    : "Works anywhere.";
+}
+$("#btnShare").addEventListener("click", () => {
+  if (!need()) return;
+  $("#sTitle").value = paletteTitle();
+  shareCat = "image"; shareFmt = "card";   // always open on the PNG card
+  autoCardImage();
+  $("#shareModal").classList.add("open"); renderShare();
+});
+$$("#shareCats button").forEach(b => b.addEventListener("click", () => { shareCat = b.dataset.cat; shareFmt = lastFmt[shareCat]; renderShare(); }));
+$("#shareTabs").addEventListener("click", e => { const b = e.target.closest("button[data-fmt]"); if (!b) return; shareFmt = lastFmt[shareCat] = b.dataset.fmt; renderShare(); });
+$$("#paneText .shareopts input").forEach(el => el.addEventListener("input", renderShare));
+$("#sTitle").addEventListener("input", () => { state.title = $("#sTitle").value; renderShare(); });
+$("#btnShareCopy").addEventListener("click", () => copyText($("#shareText").value, shareFmt === "link" ? "share link" : shareFmt === "c4d" ? "C4D swatch script" : `${state.palette.length} colors as ${{ md: "Markdown", slack: "Slack text", plain: "text", gpl: "GPL", json: "JSON", css: "CSS" }[shareFmt] || "text"}`));
+$$("#c4dOpts input, #c4dOpts select").forEach(el => el.addEventListener("input", renderShare));
+$("#btnShareDl").addEventListener("click", () => {
+  const dl = DL[shareFmt]; if (!dl || !need()) return;
+  const blob = shareFmt === "ase" ? buildASE() : new Blob([buildShare(shareFmt)], { type: dl[1] });
+  download(blob, base() + dl[0]);
+});
+
+
+// Load a palette from the URL hash (#p=hex-hex&n=name|name&t=title)
+function loadFromHash() {
+  const q = new URLSearchParams(location.hash.slice(1));
+  const p = q.get("p"); if (!p) return;
+  const names = (q.get("n") || "").split("|");
+  const cols = p.split("-").filter(h => /^[0-9a-f]{6}$/i.test(h));
+  if (!cols.length) return;
+  state.palette = cols.map((h, i) => ({
+    id: state.nextId++, source: "pin", name: names[i] || "", userNamed: !!names[i], u: null, v: null,
+    r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16),
+  }));
+  if (q.get("t")) { state.title = q.get("t"); state.imgName = q.get("t"); }
+  render();
+  $("#drop").innerHTML = `<b>Shared palette: ${cols.length} colors</b><span>Drop an image to see it in Blocks view with this palette</span>`;
+  toast(`Loaded shared palette (${cols.length} colors)`);
+}
+
+// ---------------- OKLCH helpers ----------------
+function oklabToLinear(L, a, b) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+         -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+         -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+}
+const toLch = c => { const [L, a, b] = oklab(c.r, c.g, c.b); return { L, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180 / Math.PI + 360) % 360 }; };
+// OKLCH -> sRGB 0-255, keeping L and h, reducing chroma until it fits in sRGB
+function fromLch(L, C, h) {
+  L = clamp(L, 0, 1); h = ((h % 360) + 360) % 360;
+  const rad = h * Math.PI / 180, inGamut = rgb => rgb.every(v => v >= -1e-4 && v <= 1 + 1e-4);
+  let lo = 0, hi = C, rgb = oklabToLinear(L, C * Math.cos(rad), C * Math.sin(rad));
+  if (!inGamut(rgb)) {
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) / 2, t = oklabToLinear(L, mid * Math.cos(rad), mid * Math.sin(rad));
+      if (inGamut(t)) { lo = mid; rgb = t; } else hi = mid;
+    }
+    rgb = oklabToLinear(L, lo * Math.cos(rad), lo * Math.sin(rad));
+  }
+  const [r, g, b] = rgb.map(v => Math.round(l2s(v)));
+  return { r, g, b };
+}
+
+// ---------------- Harmonies ----------------
+const harm = { baseId: null, whole: false };
+function harmonySets(c) {
+  const { L, C, h } = toLch(c), Cn = Math.max(C, 0.06);  // give near-greys a little chroma so hues show
+  const sh = [0.28, 0.42, 0.56, 0.70, 0.84];
+  return [
+    ["Complementary", [fromLch(L - 0.14, Cn, h + 180), fromLch(L, Cn, h + 180), fromLch(L + 0.14, Cn, h + 180)]],
+    ["Analogous", [fromLch(L, Cn, h - 60), fromLch(L, Cn, h - 30), fromLch(L, Cn, h + 30), fromLch(L, Cn, h + 60)]],
+    ["Triad", [fromLch(L, Cn, h + 120), fromLch(L, Cn, h + 240)]],
+    ["Split", [fromLch(L, Cn, h + 150), fromLch(L, Cn, h + 210)]],
+    ["Shades", sh.map(l => fromLch(l, C * (1 - Math.abs(l - 0.56) * 0.9), h))],
+  ];
+}
+function wholeSets() {
+  const P = state.palette.map(c => ({ c, ...toLch(c), w: c.weight != null ? c.weight : 1 / state.palette.length }));
+  const chroma = P.filter(p => p.C >= 0.04);
+  const dom = (chroma.length ? chroma : P).reduce((a, b) => (b.C * Math.sqrt(b.w) > a.C * Math.sqrt(a.w) ? b : a));
+  const avgL = P.reduce((s, p) => s + p.L, 0) / P.length;
+  const medC = chroma.length ? chroma.map(p => p.C).sort((a, b) => a - b)[chroma.length >> 1] : 0.1;
+  // Biggest hue gaps between the palette's colored swatches
+  const hs = chroma.map(p => p.h).sort((a, b) => a - b), gaps = [];
+  for (let i = 0; i < hs.length; i++) { const a = hs[i], b = i + 1 < hs.length ? hs[i + 1] : hs[0] + 360; gaps.push({ mid: (a + b) / 2, size: b - a }); }
+  gaps.sort((a, b) => b.size - a.size);
+  const fills = (hs.length ? gaps.slice(0, 3) : [{ mid: 30 }, { mid: 150 }, { mid: 270 }]).map(g => fromLch(avgL, medC, g.mid));
+  return [
+    ["Accent", [fromLch(dom.L, Math.max(dom.C, 0.08), dom.h + 180), fromLch(clamp(dom.L + 0.12, 0, 0.95), Math.max(dom.C, 0.08), dom.h + 180)]],
+    ["Fill the gaps", fills],
+    ["Neutrals", [fromLch(0.18, 0.02, dom.h), fromLch(0.45, 0.025, dom.h), fromLch(0.75, 0.02, dom.h), fromLch(0.94, 0.012, dom.h)]],
+  ];
+}
+function renderHarmonies() {
+  const sec = $("#harmSec");
+  const base = harm.baseId != null ? byId(harm.baseId) : null;
+  if ((!base && !harm.whole) || !state.palette.length) { sec.hidden = true; harm.baseId = null; harm.whole = false; $("#btnHarm").classList.remove("on"); return; }
+  sec.hidden = false;
+  $("#btnHarm").classList.add("on");
+  const sets = harm.whole ? wholeSets() : harmonySets(base);
+  $("#harmChip").style.background = harm.whole ? `linear-gradient(90deg,${state.palette.slice(0, 6).map(toHex).join(",")})` : toHex(base);
+  $("#harmBase").textContent = harm.whole ? "whole palette" : `from ${base.name}`;
+  $("#harmWhole").classList.toggle("on", harm.whole);
+  $("#harmRows").innerHTML = sets.map(([label, cols]) => `
+    <div class="hrow"><span class="lbl">${label}</span><div class="hsw">${cols.map(c => `<button style="background:${toHex(c)}" data-hex="${toHex(c)}" title="${toHex(c)}: click to add"></button>`).join("")}</div></div>`).join("");
+}
+function openHarmonies(id) { harm.baseId = id; harm.whole = false; renderList(); renderHarmonies(); $("#harmSec").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+$("#harmWhole").addEventListener("click", () => { harm.whole = !harm.whole; if (!harm.whole && harm.baseId == null) { renderHarmonies(); return; } renderHarmonies(); });
+$("#harmClose").addEventListener("click", () => { harm.baseId = null; harm.whole = false; renderList(); renderHarmonies(); });
+$("#harmRows").addEventListener("click", e => {
+  const b = e.target.closest("button[data-hex]"); if (!b) return;
+  const rgb = hexToRgb(b.dataset.hex);
+  state.palette.push({ id: state.nextId++, source: "pin", origin: "harmony", ...rgb, name: "", u: null, v: null });
+  render();
+  $("#list").scrollTop = $("#list").scrollHeight;
+  toast(`Added ${b.dataset.hex}`);
+});
+
+// ---------------- Values (lightness check) ----------------
+const valUI = { open: false };
+function showValues(on) { valUI.open = on; renderValues(); }
+function renderValues() {
+  const sec = $("#valSec");
+  $("#btnValues").classList.toggle("on", valUI.open);
+  if (!valUI.open || !state.palette.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const P = state.palette.map(c => ({ c, L: oklab(c.r, c.g, c.b)[0] })).sort((a, b) => a.L - b.L);
+  $("#vStrip").innerHTML = P.map(p => {
+    const g = Math.round(l2s(p.L ** 3));
+    return `<div title="${esc(p.c.name)} ${toHex(p.c)} · value ${Math.round(p.L * 100)}"><i style="background:${toHex(p.c)}"></i><i style="background:rgb(${g},${g},${g})"></i><span>${Math.round(p.L * 100)}</span></div>`;
+  }).join("");
+  const clash = [];
+  for (let i = 1; i < P.length; i++) if (P[i].L - P[i - 1].L < 0.03) clash.push(`${P[i - 1].c.name} and ${P[i].c.name}`);
+  $("#vMsg").innerHTML = clash.length
+    ? clash.slice(0, 3).map(t => `<div class="vwarn">⚠ ${esc(t)} read the same in grayscale</div>`).join("") + (clash.length > 3 ? `<div class="vwarn">+${clash.length - 3} more</div>` : "")
+    : `<div class="vok">Every color has its own value.</div>`;
+}
+$("#btnValues").addEventListener("click", () => showValues(!valUI.open));
+$("#btnHarm").addEventListener("click", () => {
+  if (!need()) return;
+  const open = !$("#harmSec").hidden;
+  if (open) { harm.baseId = null; harm.whole = false; } else harm.whole = true;
+  renderList(); renderHarmonies();
+});
+$("#valClose").addEventListener("click", () => showValues(false));
+
+// ---------------- Modules ----------------
+// Each workspace is a module: its own header tab, its own panel (el) and
+// enter/leave hooks. The palette, History and Share are shared by all modules.
+// A module can be switched off in Settings (core modules can't).
+const MODULES = [
+  { id: "image", title: "Image", core: true, el: "#modImage", openLabel: "Open image",
+    desc: "One image: auto-extracted and hand-placed pins.",
+    enter() { layoutImage(); }, leave() {} },
+  { id: "video", title: "Video", core: false, el: "#modVideo", openLabel: "Open video / frames",
+    desc: "A video or an image sequence: contact sheet, color script and one palette for the whole sequence.",
+    enter() { renderScript(); }, leave() { $("#scTip").style.display = "none"; } },
+  // Planned: { id: "board", title: "Board", ... }
+];
+let activeModule = null;
+const moduleOn = m => m.core || settings.modules[m.id] !== false;
+function renderModTabs() {
+  const on = MODULES.filter(moduleOn);
+  $("#modTabs").innerHTML = on.map(m => `<button data-mod="${m.id}" class="${activeModule && activeModule.id === m.id ? "on" : ""}" title="${m.desc}">${m.title}</button>`).join("");
+}
+function setModule(id) {
+  const m = MODULES.find(x => x.id === id && moduleOn(x)) || MODULES.find(moduleOn);
+  if (activeModule && activeModule !== m) activeModule.leave();
+  MODULES.forEach(x => { const el = $(x.el); if (el) el.hidden = x !== m; });
+  activeModule = m;
+  $("#btnOpen").textContent = m.openLabel || "Open image";
+  const box = $(m.el + " .stagebox"), lib = $("#history");   // the Library drawer follows the active module
+  if (box && lib && lib.parentElement !== box) box.appendChild(lib);
+  m.enter();
+  settings.lastModule = m.id; saveSettings();
+  renderModTabs();
+}
+$("#modTabs").addEventListener("click", e => { const b = e.target.closest("[data-mod]"); if (b) setModule(b.dataset.mod); });
+
+// ---------------- Video module (video / image sequence) ----------------
+// Samples N frames, a small palette per frame, then builds a contact sheet,
+// a color script and one palette for the whole sequence. Nothing leaves the browser.
+const sc = { kind: null, name: "", video: null, url: null, files: null, dur: 0, w: 0, h: 0,
+             frames: [], seq: [], view: "sheet", busy: false, cancel: false, layout: null };
+// Weighted k-means in CIELAB over [{ r, g, b (0-255 floats), w }]. Returns [{ r, g, b, w (fraction) }], heaviest first.
+function kmeansLab(items, k, iters = 12) {
+  items = items.filter(it => it.w > 0);
+  if (!items.length) return [];
+  const labs = items.map(it => rgbToLab(it.r, it.g, it.b));
+  k = Math.min(k, items.length);
+  let hi = 0; items.forEach((it, i) => { if (it.w > items[hi].w) hi = i; });
+  const C = [labs[hi].slice()];
+  const dmin = labs.map(l => dist2(l, C[0]));
+  while (C.length < k) {
+    let best = -1, bi = 0;
+    for (let i = 0; i < items.length; i++) { const s = items[i].w * dmin[i]; if (s > best) { best = s; bi = i; } }
+    if (best <= 0) break;
+    C.push(labs[bi].slice());
+    for (let i = 0; i < items.length; i++) dmin[i] = Math.min(dmin[i], dist2(labs[i], C[C.length - 1]));
+  }
+  const asg = new Int32Array(items.length).fill(-1);
+  for (let it = 0; it < iters; it++) {
+    let moved = false;
+    for (let i = 0; i < items.length; i++) {
+      let bc = 0, bd = Infinity;
+      for (let c = 0; c < C.length; c++) { const d = dist2(labs[i], C[c]); if (d < bd) { bd = d; bc = c; } }
+      if (asg[i] !== bc) { asg[i] = bc; moved = true; }
+    }
+    if (!moved) break;
+    const acc = C.map(() => [0, 0, 0, 0]);
+    items.forEach((p, i) => { const a = acc[asg[i]], l = labs[i]; a[0] += l[0] * p.w; a[1] += l[1] * p.w; a[2] += l[2] * p.w; a[3] += p.w; });
+    acc.forEach((a, c) => { if (a[3]) C[c] = [a[0] / a[3], a[1] / a[3], a[2] / a[3]]; });
+  }
+  const acc = C.map(() => [0, 0, 0, 0]); let tot = 0;
+  items.forEach((p, i) => { const a = acc[asg[i]]; a[0] += s2l(p.r) * p.w; a[1] += s2l(p.g) * p.w; a[2] += s2l(p.b) * p.w; a[3] += p.w; tot += p.w; });
+  return acc.filter(a => a[3] > 0)
+    .map(a => ({ r: Math.round(l2s(a[0] / a[3])), g: Math.round(l2s(a[1] / a[3])), b: Math.round(l2s(a[2] / a[3])), w: a[3] / tot }))
+    .sort((a, b) => b.w - a.w);
+}
+// Fold colors closer than ΔE into the heavier one
+function mergeClose(cols, de) {
+  const out = [];
+  for (const c of cols) {
+    const lab = rgbToLab(c.r, c.g, c.b);
+    const hit = out.find(o => Math.sqrt(dist2(o.lab, lab)) < de);
+    if (hit) hit.w += c.w; else out.push({ ...c, lab });
+  }
+  return out.map(({ lab, ...c }) => c);
+}
+const SC_ROWS = 48;   // barcode resolution (rows per frame column)
+function analyzeFrame(ctx, W, H, K) {
+  const d = ctx.getImageData(0, 0, W, H).data;
+  const NB = 4096, cnt = new Uint32Array(NB), sr = new Float64Array(NB), sg = new Float64Array(NB), sb = new Float64Array(NB);
+  const rows = Array.from({ length: SC_ROWS }, () => [0, 0, 0, 0]);
+  let lr = 0, lg = 0, lb = 0, n = 0;
+  for (let y = 0; y < H; y++) {
+    const row = rows[Math.min(SC_ROWS - 1, (y * SC_ROWS / H) | 0)];
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4, r = d[i], g = d[i + 1], b = d[i + 2];
+      const key = ((r >> 4) << 8) | ((g >> 4) << 4) | (b >> 4);
+      cnt[key]++; sr[key] += r; sg[key] += g; sb[key] += b;
+      const R = S2L[r], G = S2L[g], B = S2L[b];
+      lr += R; lg += G; lb += B; n++; row[0] += R; row[1] += G; row[2] += B; row[3]++;
+    }
+  }
+  const items = [];
+  for (let k = 0; k < NB; k++) if (cnt[k]) items.push({ r: sr[k] / cnt[k], g: sg[k] / cnt[k], b: sb[k] / cnt[k], w: cnt[k] });
+  let pal = mergeClose(kmeansLab(items, K), 6).filter(c => c.w >= 0.015);
+  const tw = pal.reduce((a, c) => a + c.w, 0) || 1; pal.forEach(c => c.w /= tw);
+  const lin = (a, m) => Math.round(l2s(a / (m || 1)));
+  return {
+    avg: { r: lin(lr, n), g: lin(lg, n), b: lin(lb, n) },
+    pal: pal.sort((a, b) => b.w - a.w),
+    col: rows.map(r => ({ r: lin(r[0], r[3]), g: lin(r[1], r[3]), b: lin(r[2], r[3]) })),
+  };
+}
+function scSeqPalette() {
+  const F = sc.frames; if (!F.length) { sc.seq = []; return; }
+  const items = []; F.forEach(f => f.pal.forEach(c => items.push({ ...c, w: c.w / F.length })));
+  sc.seq = mergeClose(kmeansLab(items, +$("#scPalN").value, 16), 5).sort((a, b) => oklab(a.r, a.g, a.b)[0] - oklab(b.r, b.g, b.b)[0]);
+}
+const tc = t => {
+  if (t == null) return "";
+  const h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), ss = t % 60;
+  const sec = sc.dur < 120 ? ss.toFixed(1).padStart(4, "0") : String(Math.floor(ss)).padStart(2, "0");
+  return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + sec;
+};
+function seekTo(v, t) {
+  return new Promise(res => {
+    let done = false;
+    const fin = () => { if (done) return; done = true; v.removeEventListener("seeked", fin); clearTimeout(to); res(); };
+    const to = setTimeout(fin, 4000);
+    v.addEventListener("seeked", fin);
+    v.currentTime = t;
+  });
+}
+function scReset() {
+  sc.cancel = true;
+  if (sc.url) URL.revokeObjectURL(sc.url);
+  Object.assign(sc, { kind: null, name: "", video: null, url: null, files: null, dur: 0, w: 0, h: 0, frames: [], seq: [] });
+}
+function scOpen(list) {
+  const files = [...list];
+  if (sc.busy) return toast("Still sampling: Cancel first");
+  const vid = files.find(f => f.type.startsWith("video/") || /\.(mp4|m4v|webm|mov|mkv|ogv)$/i.test(f.name));
+  if (vid) return scLoadVideo(vid);
+  const imgs = files.filter(f => f.type.startsWith("image/")).sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  if (imgs.length === 1) { toast("One image: opened in the Image module"); setModule("image"); loadFile(imgs[0]); return; }
+  if (imgs.length) return scLoadImages(imgs);
+  toast("Drop a video file or several images");
+}
+async function scLoadVideo(file) {
+  scReset();
+  const v = document.createElement("video");
+  v.muted = true; v.preload = "auto"; v.playsInline = true;
+  const url = URL.createObjectURL(file); v.src = url;
+  const ok = await new Promise(res => { v.onloadeddata = () => res(true); v.onerror = () => res(false); });
+  if (!ok || !v.videoWidth) { URL.revokeObjectURL(url); toast("This browser can't play that video. Try MP4 (H.264) or WebM, or drop the frames as images."); return; }
+  if (!isFinite(v.duration)) {   // some WebM files have no duration until you seek to the end
+    await new Promise(res => { v.ondurationchange = () => isFinite(v.duration) && res(); v.currentTime = 1e7; setTimeout(res, 3000); });
+  }
+  Object.assign(sc, { kind: "video", video: v, url, name: file.name.replace(/\.[^.]+$/, ""), dur: isFinite(v.duration) ? v.duration : 0, w: v.videoWidth, h: v.videoHeight });
+  if (!sc.dur) { toast("Could not read the video length"); return; }
+  scAnalyze();
+}
+function scLoadImages(files) {
+  scReset();
+  const first = files[0].webkitRelativePath ? files[0].webkitRelativePath.split("/")[0] : files[0].name.replace(/[_\-. ]*\d+\.[^.]+$/, "") || "frames";
+  Object.assign(sc, { kind: "images", files, name: first });
+  scAnalyze();
+}
+function pickEven(arr, n) { if (arr.length <= n) return arr.slice(); return Array.from({ length: n }, (_, i) => arr[Math.floor((i + 0.5) * arr.length / n)]); }
+function scProgress(i, n) {
+  const box = $("#scProg");
+  if (i < 0) { box.style.display = "none"; return; }
+  box.style.display = "block";
+  $("#scProgT").textContent = `Sampling frame ${i} / ${n}…`;
+  $("#scProg .bar i").style.width = (n ? i / n * 100 : 0) + "%";
+}
+async function scAnalyze() {
+  if (sc.busy) return;
+  if (!sc.kind) return toast("Open a video or some frames first");
+  sc.busy = true; sc.cancel = false; sc.frames = []; sc.seq = [];
+  const N = +$("#scCount").value, K = +$("#scK").value;
+  const list = sc.kind === "video"
+    ? Array.from({ length: N }, (_, i) => ({ t: (i + 0.5) * sc.dur / N }))
+    : pickEven(sc.files, N).map(f => ({ file: f }));
+  const A = document.createElement("canvas"), ax = A.getContext("2d", { willReadFrequently: true });
+  const T = document.createElement("canvas"), tx = T.getContext("2d");
+  renderScript(); scProgress(0, list.length);
+  for (let i = 0; i < list.length && !sc.cancel; i++) {
+    let src, w, h, bmp = null;
+    if (sc.kind === "video") { await seekTo(sc.video, list[i].t); src = sc.video; w = sc.w; h = sc.h; }
+    else {
+      try { bmp = await createImageBitmap(list[i].file); } catch { continue; }
+      src = bmp; w = bmp.width; h = bmp.height;
+      if (!sc.w) { sc.w = w; sc.h = h; }
+    }
+    if (sc.cancel) break;
+    const aw = 160, ah = Math.max(1, Math.round(aw * h / w)); A.width = aw; A.height = ah; ax.drawImage(src, 0, 0, aw, ah);
+    const tw = 400, th = Math.max(1, Math.round(tw * h / w)); T.width = tw; T.height = th; tx.drawImage(src, 0, 0, tw, th);
+    if (bmp) bmp.close();
+    const fr = { t: list[i].t, file: list[i].file, w, h, thumb: T.toDataURL("image/jpeg", 0.85),
+                 label: sc.kind === "video" ? tc(list[i].t) : list[i].file.name.replace(/\.[^.]+$/, ""), ...analyzeFrame(ax, aw, ah, K) };
+    fr.img = new Image(); fr.img.src = fr.thumb; await fr.img.decode().catch(() => {});
+    sc.frames.push(fr);
+    scProgress(i + 1, list.length);
+    if (i % 6 === 5) { scSeqPalette(); renderScript(); await new Promise(r => setTimeout(r)); }
+  }
+  const stopped = sc.cancel && sc.frames.length < list.length;
+  sc.busy = false; sc.cancel = false; scProgress(-1);
+  scSeqPalette(); renderScript();
+  if (stopped) toast(`Stopped: ${sc.frames.length} frames sampled`);
+}
+function renderScript() {
+  const loaded = !!sc.kind;
+  $("#scDrop").style.display = loaded ? "none" : "";
+  $("#scScroll").style.display = loaded ? "" : "none";
+  const sheet = sc.view === "sheet";
+  $("#scVSheet").classList.toggle("on", sheet); $("#scVScript").classList.toggle("on", !sheet);
+  $("#scSheetOpts").style.display = sheet ? "" : "none"; $("#scScriptOpts").style.display = sheet ? "none" : "";
+  $("#scSheet").style.display = sheet ? "" : "none"; $("#scScriptWrap").style.display = sheet ? "none" : "";
+  $("#scExpNote").textContent = sc.frames.length ? `Exports the ${sheet ? "contact sheet" : "color script"}, ${sheet ? $("#scCols").value + " columns" : $("#scStyle").selectedOptions[0].text.toLowerCase()}` : "Nothing to export yet";
+  $("#scCopy").disabled = $("#scDl").disabled = !sc.frames.length;
+  if (!loaded) return;
+  $("#scName").textContent = sc.name;
+  $("#scInfo").textContent = [`${sc.frames.length} frames`, sc.kind === "video" ? tc(sc.dur) : `${sc.files.length} images`, sc.w ? `${sc.w}×${sc.h}` : ""].filter(Boolean).join(" · ");
+  $("#scSeq").innerHTML = sc.seq.map(c => `<i style="background:${toHex(c)}" data-hex="${toHex(c)}" title="${toHex(c)}"></i>`).join("");
+  if (sheet) {
+    $("#scSheet").style.gridTemplateColumns = `repeat(${$("#scCols").value}, minmax(0,1fr))`;
+    $("#scSheet").innerHTML = sc.frames.map((f, k) => `<div class="scf" data-k="${k}"><img src="${f.thumb}" alt="">
+      <div class="scchips">${f.pal.map(c => `<i style="flex:${c.w.toFixed(4)};background:${toHex(c)}" data-hex="${toHex(c)}" title="${toHex(c)}"></i>`).join("")}</div>
+      <div class="scmeta"><span>#${k + 1}</span><span>${esc(f.label)}</span></div>
+      <div class="scact"><button data-act="img" title="Open this frame (full resolution) in the Image module">→ Image</button><button data-act="add" title="Add this frame's colors to the palette">+ Colors</button></div></div>`).join("");
+  } else drawScript($("#scCanvas"));
+}
+function scTheme() {
+  const dark = $("#scTheme").value === "dark";
+  return { dark, bg: dark ? "#141518" : "#f4f1ea", fg: dark ? "#ece9e3" : "#1c1c1c", fg2: dark ? "#8b8f96" : "#6b6a66", line: dark ? "#2a2d33" : "#dcd7cc",
+           sans: "system-ui, 'Segoe UI', Roboto, sans-serif", mono: "ui-monospace, Consolas, 'SF Mono', Menlo, monospace" };
+}
+// Shared bits of both PNGs: title block, sequence palette block and credit footer
+function scTitle(ctx, th, pad, y, sub) {
+  ctx.textBaseline = "top"; ctx.fillStyle = th.fg; ctx.font = `700 44px ${th.sans}`; ctx.fillText(sc.name, pad, y);
+  ctx.fillStyle = th.fg2; ctx.font = `400 20px ${th.mono}`; ctx.fillText(sub, pad, y + 58);
+  return y + 110;
+}
+const SC_SEQ_H = 44 + 54 + 110 + 34;
+function scSeqBlock(ctx, th, pad, inner, y) {
+  y += 22; ctx.fillStyle = th.line; ctx.fillRect(pad, y, inner, 1); y += 22;
+  ctx.fillStyle = th.fg; ctx.font = `700 26px ${th.sans}`; ctx.textBaseline = "top"; ctx.fillText("Sequence palette", pad, y); y += 54;
+  const n = sc.seq.length || 1, g = 10, w = (inner - g * (n - 1)) / n;
+  sc.seq.forEach((c, i) => {
+    const x = pad + i * (w + g);
+    ctx.fillStyle = toHex(c); roundRect(ctx, x, y, w, 110, 10); ctx.fill();
+    ctx.fillStyle = th.fg2; ctx.font = `400 17px ${th.mono}`; ctx.fillText(toHex(c), x + 2, y + 118, w - 4);
+  });
+  return y + 110 + 34;
+}
+function scFooter(ctx, th, W, pad, H) {
+  ctx.textBaseline = "alphabetic"; ctx.font = `500 18px ${th.sans}`; ctx.fillStyle = th.fg2;
+  ctx.fillText(`${sc.frames.length} frames`, pad, H - 34);
+  const t = `${APP.name} · @Msouza3d · kumodot.art`; ctx.fillText(t, W - pad - ctx.measureText(t).width, H - 34);
+}
+function scSub() { return [`${sc.frames.length} frames`, sc.kind === "video" ? tc(sc.dur) : "", sc.w ? `${sc.w}×${sc.h}` : ""].filter(Boolean).join(" · "); }
+function drawScript(cv) {
+  const th = scTheme(), ctx = cv.getContext("2d"), F = sc.frames, style = $("#scStyle").value;
+  const W = 1600, pad = 64, inner = W - pad * 2, SH = 380;
+  const M = Math.min(F.length, 8), kg = 14, kw = M ? (inner - kg * (M - 1)) / M : 0, kh = kw * (sc.h && sc.w ? sc.h / sc.w : 9 / 16);
+  const H = pad + 110 + SH + (M ? 40 + kh + 30 : 0) + SC_SEQ_H + 70;
+  cv.width = W; cv.height = Math.round(H);
+  ctx.fillStyle = th.bg; ctx.fillRect(0, 0, W, H);
+  let y = scTitle(ctx, th, pad, pad, scSub());
+  const n = F.length || 1, cw = inner / n;
+  sc.layout = { x: pad, y, w: inner, h: SH, n: F.length };
+  ctx.save(); roundRect(ctx, pad, y, inner, SH, 12); ctx.clip();
+  ctx.fillStyle = th.line; ctx.fillRect(pad, y, inner, SH);
+  F.forEach((f, k) => {
+    const x0 = Math.floor(pad + k * cw), x1 = Math.ceil(pad + (k + 1) * cw) + 0.5;
+    if (style === "average") { ctx.fillStyle = toHex(f.avg); ctx.fillRect(x0, y, x1 - x0, SH); }
+    else if (style === "barcode") { const rh = SH / SC_ROWS; f.col.forEach((c, r) => { ctx.fillStyle = toHex(c); ctx.fillRect(x0, y + r * rh, x1 - x0, rh + 0.6); }); }
+    else {
+      let yy = y;
+      [...f.pal].sort((a, b) => oklab(b.r, b.g, b.b)[0] - oklab(a.r, a.g, a.b)[0]).forEach(c => {
+        const hh = c.w * SH; ctx.fillStyle = toHex(c); ctx.fillRect(x0, yy, x1 - x0, hh + 0.6); yy += hh;
+      });
+    }
+  });
+  ctx.restore();
+  y += SH;
+  if (M) {   // key frames, linked to their spot on the strip
+    const ky = y + 40, idx = Array.from({ length: M }, (_, i) => Math.floor((i + 0.5) * F.length / M));
+    ctx.strokeStyle = th.fg2; ctx.globalAlpha = 0.45; ctx.lineWidth = 1.5;
+    idx.forEach((k, i) => {
+      const sx = pad + (k + 0.5) * cw, kx = pad + i * (kw + kg) + kw / 2;
+      ctx.beginPath(); ctx.moveTo(sx, y + 4); ctx.bezierCurveTo(sx, y + 24, kx, ky - 22, kx, ky - 4); ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    idx.forEach((k, i) => {
+      const f = F[k], x = pad + i * (kw + kg);
+      ctx.save(); roundRect(ctx, x, ky, kw, kh, 8); ctx.clip(); if (f.img.complete) ctx.drawImage(f.img, x, ky, kw, kh); ctx.restore();
+      ctx.fillStyle = th.fg2; ctx.font = `400 16px ${th.mono}`; ctx.textBaseline = "top"; ctx.fillText(f.label, x + 2, ky + kh + 8, kw - 4);
+    });
+    y = ky + kh + 30;
+  }
+  y = scSeqBlock(ctx, th, pad, inner, y);
+  scFooter(ctx, th, W, pad, H);
+}
+function drawSheet(cv) {
+  const th = scTheme(), ctx = cv.getContext("2d"), F = sc.frames;
+  const W = 1600, pad = 64, inner = W - pad * 2, cols = +$("#scCols").value, g = 16;
+  const cw = (inner - g * (cols - 1)) / cols, ar = sc.h && sc.w ? sc.h / sc.w : 9 / 16, thH = cw * ar, chip = 18, lab = cols > 8 ? 22 : 28;
+  const rowH = thH + chip + lab, rows = Math.ceil(F.length / cols);
+  const H = pad + 110 + rows * rowH + Math.max(0, rows - 1) * g + SC_SEQ_H + 70;
+  cv.width = W; cv.height = Math.round(H);
+  ctx.fillStyle = th.bg; ctx.fillRect(0, 0, W, H);
+  let y = scTitle(ctx, th, pad, pad, scSub());
+  F.forEach((f, k) => {
+    const x = pad + (k % cols) * (cw + g), yy = y + Math.floor(k / cols) * (rowH + g);
+    ctx.save(); roundRect(ctx, x, yy, cw, thH + chip, 8); ctx.clip();
+    if (f.img.complete) ctx.drawImage(f.img, x, yy, cw, thH);
+    let cx = x; f.pal.forEach(c => { const w = c.w * cw; ctx.fillStyle = toHex(c); ctx.fillRect(cx, yy + thH, w + 0.6, chip); cx += w; });
+    ctx.restore();
+    ctx.fillStyle = th.fg2; ctx.font = `400 ${cols > 8 ? 13 : 15}px ${th.mono}`; ctx.textBaseline = "top";
+    ctx.fillText(`#${k + 1}  ${f.label}`, x + 2, yy + thH + chip + 6, cw - 4);
+  });
+  y += rows * rowH + Math.max(0, rows - 1) * g;
+  y = scSeqBlock(ctx, th, pad, inner, y);
+  scFooter(ctx, th, W, pad, H);
+}
+function scCanvasNow() {
+  if (!sc.frames.length) { toast("Nothing sampled yet"); return null; }
+  const cv = document.createElement("canvas");
+  if (sc.view === "sheet") drawSheet(cv); else drawScript(cv);
+  return cv;
+}
+const scFileName = () => `${slug(sc.name)}_${sc.view === "sheet" ? "contact_sheet" : "color_script"}.png`;
+$("#scDl").addEventListener("click", () => { const cv = scCanvasNow(); if (cv) cv.toBlob(b => download(b, scFileName()), "image/png"); });
+$("#scCopy").addEventListener("click", () => {
+  const cv = scCanvasNow(); if (!cv) return;
+  const blobP = new Promise(res => cv.toBlob(res, "image/png"));
+  const fallback = () => blobP.then(b => { download(b, scFileName()); toast("Browser blocked image copy: downloaded the PNG instead"); });
+  try { navigator.clipboard.write([new ClipboardItem({ "image/png": blobP })]).then(() => toast(`${sc.view === "sheet" ? "Contact sheet" : "Color script"} copied: paste in Slack, Teams, Figma...`)).catch(fallback); }
+  catch { fallback(); }
+});
+// Open one sampled frame, full resolution, in the Image module
+async function scToImage(k) {
+  const f = sc.frames[k]; if (!f) return;
+  if (sc.busy) return toast("Still sampling: wait or Cancel");
+  let file = f.file;
+  if (sc.kind === "video") {
+    await seekTo(sc.video, f.t);
+    const cv = document.createElement("canvas"); cv.width = sc.w; cv.height = sc.h;
+    cv.getContext("2d").drawImage(sc.video, 0, 0, sc.w, sc.h);
+    const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+    file = new File([blob], `${sc.name}_${f.label.replace(/[:.]/g, "-")}.png`, { type: "image/png" });
+  }
+  setModule("image"); loadFile(file);
+}
+const scAsLib = (name, cols) => ({ name, origin: "video", colors: cols.map(c => ({ hex: toHex(c), name: "" })) });
+$("#scSheet").addEventListener("click", e => {
+  const card = e.target.closest(".scf"); if (!card) return;
+  const k = +card.dataset.k, f = sc.frames[k];
+  const chip = e.target.closest("[data-hex]"); if (chip) { copyText(chip.dataset.hex); return; }
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "img") scToImage(k);
+  else if (act === "add") loadLibEntry(scAsLib(`${sc.name} ${f.label}`, f.pal), true);
+});
+$("#scSeq").addEventListener("click", e => { const c = e.target.closest("[data-hex]"); if (c) copyText(c.dataset.hex); });
+$("#scUse").addEventListener("click", () => {
+  if (!sc.seq.length) return toast("Nothing sampled yet");
+  askReplaceOrMerge(scAsLib(sc.name, sc.seq));
+});
+// Color script hover / click
+function scFrameAt(e) {
+  const L = sc.layout, cv = $("#scCanvas"); if (!L || !L.n) return -1;
+  const r = cv.getBoundingClientRect(), s = cv.width / r.width;
+  const x = (e.clientX - r.left) * s, y = (e.clientY - r.top) * s;
+  if (x < L.x || x >= L.x + L.w || y < L.y || y > L.y + L.h) return -1;
+  return Math.min(L.n - 1, Math.floor((x - L.x) / L.w * L.n));
+}
+$("#scCanvas").addEventListener("mousemove", e => {
+  const k = scFrameAt(e), tip = $("#scTip");
+  if (k < 0) { tip.style.display = "none"; $("#scCanvas").style.cursor = "default"; return; }
+  $("#scCanvas").style.cursor = "pointer";
+  const f = sc.frames[k], wrap = $("#scScriptWrap").getBoundingClientRect();
+  $("img", tip).src = f.thumb; $("span", tip).textContent = `#${k + 1} · ${f.label} · click: open in Image`;
+  tip.style.display = "block";
+  const x = e.clientX - wrap.left + 16, maxX = wrap.width - 240;
+  tip.style.left = Math.min(x, maxX) + "px"; tip.style.top = (e.clientY - wrap.top + 16) + "px";
+});
+$("#scCanvas").addEventListener("mouseleave", () => { $("#scTip").style.display = "none"; });
+$("#scCanvas").addEventListener("click", e => { const k = scFrameAt(e); if (k >= 0) scToImage(k); });
+// Controls
+[["scCount", "scCountV"], ["scK", "scKV"], ["scCols", "scColsV"], ["scPalN", "scPalNV"]].forEach(([a, b]) =>
+  $("#" + a).addEventListener("input", () => { $("#" + b).textContent = $("#" + a).value; }));
+$("#scCols").addEventListener("input", () => renderScript());
+$("#scPalN").addEventListener("input", () => { scSeqPalette(); renderScript(); });
+$("#scStyle").addEventListener("change", () => renderScript());
+$("#scTheme").addEventListener("change", () => renderScript());
+$("#scRun").addEventListener("click", () => scAnalyze());
+$("#scCancel").addEventListener("click", () => { sc.cancel = true; });
+$("#scVSheet").addEventListener("click", () => { sc.view = "sheet"; renderScript(); });
+$("#scVScript").addEventListener("click", () => { sc.view = "script"; renderScript(); });
+$("#scFile").addEventListener("change", e => { if (e.target.files.length) scOpen(e.target.files); e.target.value = ""; });
+const scStage = $("#scStage");
+scStage.addEventListener("dragover", e => { if (!e.dataTransfer.types.includes("Files") || e.target.closest("#history")) return; e.preventDefault(); scStage.classList.add("dragover"); });
+scStage.addEventListener("dragleave", () => scStage.classList.remove("dragover"));
+scStage.addEventListener("drop", e => { if (e.target.closest("#history")) return; e.preventDefault(); scStage.classList.remove("dragover"); if (e.dataTransfer.files.length) scOpen(e.dataTransfer.files); });
+
+// ---------------- Settings ----------------
+function renderSettings() {
+  $("#modList").innerHTML = MODULES.map(m => `
+    <label class="modrow"><input type="checkbox" data-mod="${m.id}" ${moduleOn(m) ? "checked" : ""} ${m.core ? "disabled" : ""}>
+      <b>${m.title}</b><span class="d grow">${m.desc}</span>${m.core ? '<span class="tag">core</span>' : ""}</label>`).join("");
+  $("#setAces").checked = settings.acescg;
+}
+$("#btnSettings").addEventListener("click", () => { renderSettings(); $("#settingsModal").classList.add("open"); });
+$("#modList").addEventListener("change", e => {
+  const id = e.target.dataset.mod; if (!id) return;
+  settings.modules[id] = e.target.checked; saveSettings();
+  if (!e.target.checked && activeModule && activeModule.id === id) setModule(null); else renderModTabs();
+});
+$("#setAces").addEventListener("change", e => { settings.acescg = e.target.checked; saveSettings(); renderList(); });
+
+// ---------------- Library (palette library, UI name; code still says history/lib) ----------------
+// Only colors + names are stored, never the image. Lives in localStorage.
+const LIB_KEY = "chromadrop.history.v1";
+let lib = LS.get(LIB_KEY, []);   // [{ id, name, created, colors: [{ hex, name, w }] }], array order = manual order
+if (!Array.isArray(lib)) lib = [];
+const libSort = { mode: LS.get(LIB_KEY + ".sort", "manual") };
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+const hexToRgb = h => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
+const newLibId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+function saveLib() {
+  if (!LS.set(LIB_KEY, lib)) toast("Could not save the Library (storage blocked or full)");
+  $("#histCount").textContent = lib.length;
+}
+// Sort key for "Color": the most saturated color, weighted by coverage (OKLCH chroma).
+// Palettes with no real color (greys, beiges) go last, light to dark.
+function libHueKey(p) {
+  let best = null, bs = -1, L = 0;
+  const n = p.colors.length || 1;
+  for (const c of p.colors) {
+    const [l, a, b] = oklab(...Object.values(hexToRgb(c.hex)));
+    const C = Math.hypot(a, b), w = c.w != null ? c.w : 1 / n, sc = C * Math.sqrt(w);
+    L += l / n;
+    if (sc > bs) { bs = sc; best = { C, h: (Math.atan2(b, a) * 180 / Math.PI + 360) % 360 }; }
+  }
+  if (!best || best.C < 0.04) return 1000 + (1 - L);           // neutrals after all hues
+  return (best.h - 20 + 360) % 360;                           // start around red
+}
+function sortedLib() {
+  const L = [...lib];
+  switch (libSort.mode) {
+    case "new": return L.sort((a, b) => b.created - a.created);
+    case "old": return L.sort((a, b) => a.created - b.created);
+    case "name": return L.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }));
+    case "hue": return L.sort((a, b) => libHueKey(a) - libHueKey(b));
+    default: return L;
+  }
+}
+function fmtDate(t) {
+  const d = new Date(t);
+  return d.toLocaleDateString(undefined, { year: "2-digit", month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+}
+function renderLib(flashId) {
+  $("#histCount").textContent = lib.length;
+  $("#histSort").value = libSort.mode;
+  const list = $("#histList");
+  if (!lib.length) { list.innerHTML = `<div class="hist-empty">No saved palettes yet.<br>Only colors and names are stored, never images.</div>`; return; }
+  const manual = libSort.mode === "manual";
+  list.innerHTML = sortedLib().map(p => `
+    <div class="hcard${p.id === flashId ? " flash" : ""}" data-id="${p.id}" draggable="true" title="${manual ? "Drag to reorder, or drag onto the palette to load (asks Replace or Merge)" : "Drag onto the palette to load (asks Replace or Merge). Switch sort to Manual to reorder."}">
+      <div class="hstrip">${p.colors.map(c => `<i style="background:${c.hex}" data-hex="${c.hex}" title="${esc(c.name || "")} ${c.hex} (click to copy)"></i>`).join("")}</div>
+      <div class="hmeta"><span class="hname">${esc(p.name)}</span><span class="hdate">${p.colors.length} · ${fmtDate(p.created)}</span></div>
+      <div class="hact">
+        <button data-act="load" title="Load into the stage (replaces the current palette)">Load</button>
+        <button data-act="add" title="Merge: add the colors you don't have yet">+ Add</button>
+        <button data-act="ren" title="Rename">✎</button>
+        <button data-act="del" title="Delete">✕</button>
+      </div>
+    </div>`).join("");
+  if (flashId) setTimeout(() => $(`.hcard[data-id="${flashId}"]`)?.classList.remove("flash"), 1500);
+}
+const historyEl = $("#history");
+function toggleHistory(force) {
+  const open = force != null ? force : !historyEl.classList.contains("open");
+  historyEl.classList.toggle("open", open);
+}
+$("#histHandle").addEventListener("click", () => toggleHistory());
+$("#histClose").addEventListener("click", () => toggleHistory(false));
+$("#histSort").addEventListener("change", e => { libSort.mode = e.target.value; LS.set(LIB_KEY + ".sort", libSort.mode); renderLib(); });
+
+// Save flow: name dialog
+function openSaveDialog() {
+  if (!need()) return;
+  $("#histName").value = (paletteTitle() || "Palette").trim();
+  $("#histPrev").innerHTML = state.palette.map(c => `<i style="background:${toHex(c)}"></i>`).join("");
+  $("#nameModal").classList.add("open");
+  setTimeout(() => { $("#histName").focus(); $("#histName").select(); }, 30);
+}
+function commitSave() {
+  const name = $("#histName").value.trim() || "Untitled";
+  const entry = {
+    id: newLibId(), name, created: Date.now(),
+    colors: state.palette.map(c => ({ hex: toHex(c), name: c.name, w: c.source === "auto" && c.weight != null ? +c.weight.toFixed(4) : null })),
+  };
+  lib.unshift(entry);
+  saveLib();
+  $("#nameModal").classList.remove("open");
+  toggleHistory(true);
+  renderLib(entry.id);
+  $("#histList").scrollTop = 0;
+  toast(`Saved "${name}" to the Library`);
+}
+$("#btnSavePal").addEventListener("click", openSaveDialog);
+$("#histSaveBtn").addEventListener("click", openSaveDialog);
+$("#histNameOk").addEventListener("click", commitSave);
+$("#histName").addEventListener("keydown", e => { if (e.key === "Enter") commitSave(); });
+
+// Drag the palette ("Save" chip) onto the drawer
+const PAL_MIME = "application/x-chromadrop-palette", LIB_MIME = "application/x-chromadrop-lib";
+$("#btnSavePal").addEventListener("dragstart", e => {
+  if (!state.palette.length) { e.preventDefault(); toast("Palette is empty"); return; }
+  e.dataTransfer.setData(PAL_MIME, "1"); e.dataTransfer.setData("text/plain", state.palette.map(toHex).join(" "));
+  e.dataTransfer.effectAllowed = "copy";
+  setTimeout(() => toggleHistory(true), 0);
+});
+historyEl.addEventListener("dragover", e => {
+  const t = e.dataTransfer.types;
+  if (t.includes(PAL_MIME) || t.includes("Files")) { e.preventDefault(); historyEl.classList.add("dropping"); }
+  else if (t.includes(LIB_MIME)) e.preventDefault();
+});
+historyEl.addEventListener("dragleave", e => { if (!historyEl.contains(e.relatedTarget)) historyEl.classList.remove("dropping"); });
+historyEl.addEventListener("drop", e => {
+  historyEl.classList.remove("dropping");
+  const t = e.dataTransfer.types;
+  if (t.includes(PAL_MIME)) { e.preventDefault(); openSaveDialog(); return; }
+  if (t.includes("Files")) { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) importLibFile(f); }
+});
+$("#histHandle").addEventListener("dragenter", () => toggleHistory(true));
+
+// Card actions
+// Library colors not already in the current palette (exact HEX match)
+function newLibColors(p) {
+  const have = new Set(state.palette.map(toHex));
+  return p.colors.filter(c => !have.has(c.hex.toUpperCase()));
+}
+function loadLibEntry(p, append) {
+  const src = append ? newLibColors(p) : p.colors;
+  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: p.origin || "history", ...hexToRgb(c.hex), name: c.name || "", userNamed: !!c.name, u: null, v: null }));
+  state.palette = append ? [...state.palette, ...cols] : cols;
+  if (!append) { state.title = p.name; state.selId = null; }
+  render();
+  const skipped = p.colors.length - cols.length;
+  toast(append ? `Merged ${cols.length} color${cols.length === 1 ? "" : "s"} from "${p.name}"` + (skipped ? ` (${skipped} already there)` : "") : `Loaded "${p.name}"`);
+}
+// Dropped on a non-empty palette: ask Replace or Merge
+let mergePending = null;
+function askReplaceOrMerge(p) {
+  if (!state.palette.length) { loadLibEntry(p, false); return; }
+  mergePending = p;
+  const fresh = newLibColors(p).length;
+  $("#mergeTitle").textContent = `Load "${p.name}"`;
+  $("#mergeCur").innerHTML = state.palette.map(c => `<i style="background:${toHex(c)}"></i>`).join("");
+  $("#mergeNew").innerHTML = p.colors.map(c => `<i style="background:${c.hex}"></i>`).join("");
+  $("#mergeReplace").textContent = `Replace (${p.colors.length} colors)`;
+  $("#mergeMerge").textContent = fresh ? `Merge (+${fresh} new)` : "Merge (nothing new)";
+  $("#mergeMerge").disabled = !fresh;
+  $("#mergeNote").textContent = "Replace swaps the current colors for this palette. Merge adds only the colors you don't have yet.";
+  $("#mergeModal").classList.add("open");
+  setTimeout(() => $("#mergeReplace").focus(), 30);
+}
+$("#mergeReplace").addEventListener("click", () => { $("#mergeModal").classList.remove("open"); if (mergePending) loadLibEntry(mergePending, false); mergePending = null; });
+$("#mergeMerge").addEventListener("click", () => { $("#mergeModal").classList.remove("open"); if (mergePending) loadLibEntry(mergePending, true); mergePending = null; });
+function startRename(card, p) {
+  const span = $(".hname", card);
+  const inp = document.createElement("input"); inp.type = "text"; inp.value = p.name;
+  span.replaceWith(inp); inp.focus(); inp.select();
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    if (ok && inp.value.trim()) { p.name = inp.value.trim(); saveLib(); }
+    renderLib();
+  };
+  inp.addEventListener("keydown", e => { if (e.key === "Enter") finish(true); if (e.key === "Escape") { e.stopPropagation(); finish(false); } });
+  inp.addEventListener("blur", () => finish(true));
+}
+$("#histList").addEventListener("click", e => {
+  const card = e.target.closest(".hcard"); if (!card) return;
+  const p = lib.find(x => x.id === card.dataset.id); if (!p) return;
+  const sw = e.target.closest(".hstrip i");
+  if (sw) { copyText(sw.dataset.hex); return; }
+  const act = e.target.closest("[data-act]")?.dataset.act;
+  if (act === "load") loadLibEntry(p, false);
+  else if (act === "add") loadLibEntry(p, true);
+  else if (act === "ren") startRename(card, p);
+  else if (act === "del") {
+    const b = e.target.closest("button");
+    if (!b.classList.contains("sure")) {           // two-click delete, no dialog
+      b.classList.add("sure"); b.textContent = "Sure?";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("sure"); b.textContent = "✕"; } }, 2500);
+      return;
+    }
+    lib = lib.filter(x => x !== p); saveLib(); renderLib(); toast(`Deleted "${p.name}"`);
+  }
+});
+$("#histList").addEventListener("dblclick", e => {
+  const card = e.target.closest(".hcard"); if (!card || !e.target.closest(".hname")) return;
+  startRename(card, lib.find(x => x.id === card.dataset.id));
+});
+
+// Card drag: reorder (manual sort) or drop on the palette panel to load
+let dragLibId = null;
+$("#histList").addEventListener("dragstart", e => {
+  const card = e.target.closest(".hcard"); if (!card) return;
+  dragLibId = card.dataset.id;
+  e.dataTransfer.setData(LIB_MIME, dragLibId); e.dataTransfer.effectAllowed = "copyMove";
+  card.classList.add("dragging");
+});
+$("#histList").addEventListener("dragover", e => {
+  if (!dragLibId || libSort.mode !== "manual") return;
+  e.preventDefault();
+  $$(".hcard").forEach(c => c.classList.remove("dropabove"));
+  const over = e.target.closest(".hcard"); if (over && over.dataset.id !== dragLibId) over.classList.add("dropabove");
+});
+$("#histList").addEventListener("drop", e => {
+  if (!dragLibId || libSort.mode !== "manual") return;
+  e.preventDefault(); e.stopPropagation();
+  const over = e.target.closest(".hcard");
+  const item = lib.find(x => x.id === dragLibId);
+  lib = lib.filter(x => x !== item);
+  const to = over ? lib.findIndex(x => x.id === over.dataset.id) : lib.length;
+  lib.splice(to < 0 ? lib.length : to, 0, item);
+  saveLib(); renderLib();
+});
+$("#histList").addEventListener("dragend", () => { dragLibId = null; $$(".hcard").forEach(c => c.classList.remove("dragging", "dropabove")); });
+const panelEl = $("aside.panel");
+panelEl.addEventListener("dragover", e => { if (e.dataTransfer.types.includes(LIB_MIME)) { e.preventDefault(); panelEl.classList.add("libdrop"); } });
+panelEl.addEventListener("dragleave", e => { if (!panelEl.contains(e.relatedTarget)) panelEl.classList.remove("libdrop"); });
+panelEl.addEventListener("drop", e => {
+  panelEl.classList.remove("libdrop");
+  const id = e.dataTransfer.getData(LIB_MIME); if (!id) return;
+  e.preventDefault();
+  const p = lib.find(x => x.id === id); if (p) askReplaceOrMerge(p);
+});
+
+// Export / import (backup, or move History to another browser/computer)
+$("#histExport").addEventListener("click", () => {
+  if (!lib.length) return toast("Library is empty");
+  const data = { type: "chromadrop-library", version: 1, app: `${APP.name} v${APP.version}`, exported: new Date().toISOString(), palettes: lib };
+  download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `chromadrop_library_${new Date().toISOString().slice(0, 10)}.json`);
+});
+$("#histImport").addEventListener("click", () => $("#histFile").click());
+$("#histFile").addEventListener("change", e => { if (e.target.files[0]) importLibFile(e.target.files[0]); e.target.value = ""; });
+function importLibFile(file) {
+  const rd = new FileReader();
+  rd.onload = () => {
+    let data; try { data = JSON.parse(rd.result); } catch { return toast("Not a valid .json file"); }
+    const okHex = h => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
+    const clean = p => ({
+      id: typeof p.id === "string" ? p.id : newLibId(),
+      name: String(p.name || "Imported").slice(0, 120),
+      created: Number.isFinite(p.created) ? p.created : Date.now(),
+      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: String(c.name || "").slice(0, 60), w: Number.isFinite(c.w) ? c.w : null })),
+    });
+    let incoming = [];
+    if (data && (data.type === "chromadrop-library" || data.type === "chromadrop-history") && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
+    else if (data && Array.isArray(data.colors)) incoming = [clean({ name: data.name, colors: data.colors.map(c => ({ hex: c.hex, name: c.name, w: c.coverage })) })];
+    incoming = incoming.filter(p => p.colors.length);
+    if (!incoming.length) return toast("No palettes found in that file");
+    const have = new Set(lib.map(p => p.id));
+    const added = incoming.filter(p => !have.has(p.id));
+    lib = [...added, ...lib];
+    saveLib(); toggleHistory(true); renderLib(added[0]?.id);
+    toast(`Imported ${added.length} palette${added.length === 1 ? "" : "s"}` + (added.length < incoming.length ? ` (${incoming.length - added.length} already there)` : ""));
+  };
+  rd.readAsText(file);
+}
+renderLib();
+
+// ---------------- Modals / about ----------------
+$("#btnAbout").addEventListener("click", () => $("#aboutModal").classList.add("open"));
+$$(".modal").forEach(m => m.addEventListener("click", e => { if (e.target === m || e.target.closest("[data-close]")) m.classList.remove("open"); }));
+$("#creditLine").textContent = CREDIT;
+$("#aboutVer").textContent = `v${APP.version}`;
+$("#verBadge").textContent = `v${APP.version}`;
+document.title = `${APP.name} v${APP.version}`;
+setModule(settings.lastModule || "image");
+loadFromHash();
+</script>
+</body>
 </html>
