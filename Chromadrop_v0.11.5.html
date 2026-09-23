@@ -1,11 +1,44 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.10.2
+  Chromadrop v0.11.5
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.11.5 (2026-09-23)
+    - PNG card Extras: when Harmonies and/or Values are open, they are added to
+      the card below the palette (each with its own checkbox to leave it out).
+  v0.11.4 (2026-09-23)
+    - Toggle buttons show when they're on: ✦ Harmonies, ◐ Values and
+      Whole palette light up (accent border + tint) while their section is open.
+  v0.11.3 (2026-09-23)
+    - Clear ▾ menu is positioned inside the window (it could open off-screen).
+    - Fix: on narrower windows (~1280px) the image area overflowed under the
+      palette panel (grid column now minmax(0,1fr)).
+    - Dropping a Library palette on a non-empty palette asks Replace or Merge
+      (Merge skips colors that are already there). Empty palette loads directly.
+      + Add on a Library card also skips duplicates.
+  v0.11.2 (2026-09-23)
+    - "History" renamed to "Library" everywhere in the UI (it's a palette
+      library, not a list of recent palettes). Shortcut L (H still works).
+      Saved palettes are kept (same storage). Exports now say
+      "chromadrop-library"; old "chromadrop-history" files still import.
+  v0.11.1 (2026-09-23)
+    - Extract (button / E) is now a true reset of the image scan: it also
+      removes colors that didn't come from the image (History, link,
+      Harmonies), keeping only pins you placed on the image.
+    - "Clear ▾" menu replaces ✕ Auto / ✕ All: auto colors, pins you placed,
+      loaded & generated colors, or everything, with counts.
+  v0.11 (2026-09-23)
+    - Harmonies: ✦ on any color opens suggestions (Complementary, Analogous,
+      Triad, Split, Shades) computed in OKLCH with gamut mapping. "Whole
+      palette" suggests accents that fill hue gaps + tinted neutrals.
+      Click a suggestion to add it to the palette (GENERATED tag).
+    - Value check: View > Value shows the image in grayscale (perceptual
+      lightness) with Tones posterize (2-5). Value strip in the panel sorts
+      the palette dark to light with gray equivalents and warns when two
+      colors read the same in grayscale. Shortcut V.
   v0.10.2 (2026-09-23)
     - PNG card: "Include image" checkbox (+ Original / Blocks). It turns itself
       on when the palette came from the loaded image and off when it came from
@@ -93,7 +126,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.10.2</title>
+<title>Chromadrop v0.11.5</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -128,6 +161,7 @@ button.primary{background:var(--accent);border-color:var(--accent);color:#1a1307
 button.primary:hover{background:var(--accent2)}
 button.ghost{background:transparent;border-color:transparent;color:var(--fg2)}
 button.ghost:hover{color:var(--fg);border-color:var(--line)}
+button.ghost.on{color:var(--accent);border-color:var(--accent);background:#2a2415}
 select,input[type=text],input[type=number]{background:var(--bg3);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
 input[type=range]{accent-color:var(--accent);width:90px;vertical-align:middle}
 input[type=checkbox]{accent-color:var(--accent);vertical-align:middle}
@@ -139,9 +173,9 @@ header.top{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bot
 .ver{font:600 11px var(--mono);color:var(--accent);border:1px solid var(--accent);border-radius:20px;padding:1px 7px;margin-left:6px;vertical-align:2px}
 header .spacer{flex:1}
 main{display:grid;grid-template-columns:1fr 500px;min-height:0}
-.stage-wrap{display:grid;grid-template-rows:auto 1fr auto;min-width:0;min-height:0;border-right:1px solid var(--line)}
+.stage-wrap{display:grid;grid-template-rows:auto 1fr auto;grid-template-columns:minmax(0,1fr);overflow:hidden;min-width:0;min-height:0;border-right:1px solid var(--line)}
 .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--bg2)}
-.toolbar .grp{display:flex;align-items:center;gap:8px}
+.toolbar .grp{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .toolbar .sep{width:1px;height:22px;background:var(--line)}
 .toolbar .num{font:12px var(--mono);color:var(--fg);min-width:26px;display:inline-block}
 .gtitle{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3)}
@@ -156,7 +190,8 @@ main{display:grid;grid-template-columns:1fr 500px;min-height:0}
 #imgBox img{width:100%;height:100%;display:block;user-select:none;-webkit-user-drag:none;pointer-events:none}
 #markers{position:absolute;inset:0}
 #blockCanvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;display:none;pointer-events:none}
-#imgBox.blocks #blockCanvas{display:block}
+#imgBox.blocks #blockCanvas,#imgBox.value #blockCanvas{display:block}
+#imgBox.value #blockCanvas{image-rendering:auto}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;border-radius:0;background:var(--bg3);padding:5px 10px}
 .seg button.on{background:var(--accent);color:#1a1307;font-weight:600}
@@ -174,7 +209,30 @@ main{display:grid;grid-template-columns:1fr 500px;min-height:0}
 .hint{padding:6px 14px;color:var(--fg3);font-size:12px;border-top:1px solid var(--line);background:var(--bg2);display:flex;gap:16px;flex-wrap:wrap}
 .hint a{color:var(--fg3)}
 .hint .grow{flex:1}
-aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;background:var(--bg2)}
+aside.panel{display:grid;grid-template-rows:auto 1fr auto auto auto;min-height:0;background:var(--bg2)}
+.rhead .hx{padding:0 6px;line-height:18px;background:transparent;border-color:transparent;color:var(--fg3)}
+.rhead .hx:hover,.row.harmbase .hx{color:var(--accent);border-color:var(--line)}
+.row.harmbase{border-color:var(--accent)}
+.psec{border-top:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:6px;max-height:40vh;overflow:auto}
+.psec[hidden]{display:none}
+.psec-head{display:flex;align-items:center;gap:8px}
+.psec-head b{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--fg2)}
+.psec-head .spacer{flex:1}
+.psec-head .basechip{width:16px;height:16px;border-radius:4px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.psec-head .ghost{padding:2px 8px;font-size:12px}
+.hrow{display:grid;grid-template-columns:92px 1fr;align-items:center;gap:8px}
+.hrow .lbl{font-size:11px;color:var(--fg3)}
+.hsw{display:flex;gap:4px}
+.hsw button{flex:1;height:30px;border-radius:5px;border:0;padding:0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);cursor:copy;position:relative}
+.hsw button:hover{outline:2px solid var(--accent);outline-offset:1px}
+.hsw button::after{content:"+";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;opacity:0;color:#fff;text-shadow:0 1px 2px #000}
+.hsw button:hover::after{opacity:1}
+.vstrip{display:flex;border-radius:6px;overflow:hidden}
+.vstrip div{flex:1;display:flex;flex-direction:column;min-width:0}
+.vstrip i{height:22px;display:block}
+.vstrip span{font:9px var(--mono);color:var(--fg3);text-align:center;padding-top:2px;white-space:nowrap;overflow:hidden}
+.vwarn{font-size:11px;color:#e8b04a}
+.vok{font-size:11px;color:var(--fg3)}
 .panel-head{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line);flex-wrap:wrap}
 .panel-head h2{margin:0;font-size:14px}
 .panel-head .count{color:var(--fg3);font:12px var(--mono)}
@@ -202,6 +260,15 @@ aside.panel{display:grid;grid-template-rows:auto 1fr auto;min-height:0;backgroun
 .val .v{font:11.5px var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .val.copied{border-color:var(--accent);background:#2a2415}
 aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
+.clearwrap{position:relative}
+.clearmenu{position:fixed;background:var(--bg3);border:1px solid var(--line);border-radius:8px;padding:4px;display:flex;flex-direction:column;min-width:230px;box-shadow:0 10px 30px rgba(0,0,0,.5);z-index:10}
+.clearmenu[hidden]{display:none}
+.clearmenu button{background:transparent;border:0;text-align:left;padding:7px 10px;display:grid;grid-template-columns:1fr auto;gap:0 8px}
+.clearmenu button:hover:not(:disabled){background:var(--bg2)}
+.clearmenu button:disabled{opacity:.35;cursor:default}
+.clearmenu button b{font:600 11px var(--mono);color:var(--fg3)}
+.clearmenu button small{grid-column:1/-1;font-size:10px;color:var(--fg3)}
+.clearmenu button.danger{color:var(--danger)}
 .panel-foot{border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
 .panel-foot .line{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .panel-foot .line .spacer{flex:1}
@@ -240,6 +307,8 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .cardopts label.off{opacity:.45}
 .cnote{font-size:11px;color:var(--fg3);margin-top:-4px}
 .cnote:empty{display:none}
+.cextras{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
+.csub{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--fg3)}
 .cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
 .cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
 /* modules */
@@ -283,6 +352,12 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 .swprev{display:flex;height:34px;border-radius:6px;overflow:hidden;margin-top:12px}
 .swprev i{flex:1}
 .setdlg{width:460px}
+.mrow{display:grid;grid-template-columns:60px 1fr;align-items:center;gap:10px;margin-bottom:8px}
+.mrow .swprev{margin-top:0;height:28px}
+.mlbl{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.6px}
+.mbtns{display:flex;gap:8px;margin-top:12px}
+.mbtns button{flex:1;white-space:nowrap}
+#mergeModal .namedlg{width:520px}
 .setdlg h4{margin:4px 0 8px;font-size:12px;letter-spacing:.8px;text-transform:uppercase;color:var(--fg3)}
 .modrow{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;background:var(--bg)}
 .modrow .d{color:var(--fg3);font-size:12px}
@@ -298,7 +373,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.10.2</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.11.5</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -317,7 +392,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
           <label title="How close counts as similar (ΔE). Higher = fewer, more distinct colors.">ΔE <input type="range" id="mergeDE" min="2" max="40" value="12"> <span class="num" id="mergeDEV">12</span></label>
           <label title="Drop colors covering less than this % of the image (kills anti-aliasing edges)">Min % <input type="range" id="minPct" min="0" max="5" step="0.1" value="2"> <span class="num" id="minPctV">2</span></label>
           <label title="Use the most frequent exact color of each cluster instead of the average. Best for flat art."><input type="checkbox" id="snap" checked> Snap to flat</label>
-          <button id="btnExtract" class="primary" title="Fresh extract, also brings back auto colors you deleted. Shortcut: E">Extract</button>
+          <button id="btnExtract" class="primary" title="Fresh extract from the image: brings back auto colors you deleted and removes colors loaded from the Library, links or Harmonies (pins you placed on the image stay). Shortcut: E">Extract</button>
         </div>
         <div class="sep"></div>
         <div class="grp">
@@ -337,7 +412,12 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         <div class="sep"></div>
         <div class="grp">
           <span class="gtitle">View</span>
-          <div class="seg"><button id="vOrig" class="on">Original</button><button id="vBlocks" title="Shortcut: B">Blocks</button></div>
+          <div class="seg"><button id="vOrig" class="on">Original</button><button id="vBlocks" title="Shortcut: B">Blocks</button><button id="vValue" title="Grayscale value check. Shortcut: V">Value</button></div>
+        </div>
+        <div class="grp dim" id="valueOpts" style="display:none">
+          <label title="Posterize the grayscale into a few value groups to read the composition">Tones
+            <select id="valTones"><option value="0">Smooth</option><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option><option value="5">5</option></select>
+          </label>
         </div>
         <div class="grp dim" id="blockOpts">
           <label title="Mosaic cell size">Block <input type="range" id="blockSize" min="1" max="48" value="1"> <span class="num" id="blockSizeV">1</span></label>
@@ -353,9 +433,9 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         <div id="imgBox"><img id="img" alt=""><canvas id="blockCanvas"></canvas><div id="markers"></div></div>
         <canvas id="loupe" width="120" height="140"></canvas>
         <aside class="history" id="history">
-          <button class="hist-handle" id="histHandle" title="History (H)"><span>History</span><b id="histCount">0</b></button>
+          <button class="hist-handle" id="histHandle" title="Library (L)"><span>Library</span><b id="histCount">0</b></button>
           <div class="hist-head">
-            <b>History</b>
+            <b>Library</b>
             <select id="histSort" title="Sort">
               <option value="manual">Manual</option>
               <option value="new">Newest</option>
@@ -377,7 +457,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         </aside>
       </div>
       <div class="hint">
-        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>H: history</span><span>C: copy card</span>
+        <span>Click empty: new pin</span><span>Click pin: select</span><span>Drag: move</span><span>Del: delete selected</span><span>E: extract</span><span>B: blocks view</span><span>L: library</span><span>C: copy card</span><span>V: value</span>
         <span class="grow"></span>
         <a href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a>
       </div>
@@ -386,7 +466,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
     <aside class="panel">
       <div class="panel-head">
         <h2>Palette</h2><span class="count" id="count">0</span>
-        <button id="btnSavePal" draggable="true" title="Save to History: click, or drag onto the History tab">★ Save</button>
+        <button id="btnSavePal" draggable="true" title="Save to the Library: click, or drag onto the Library tab">★ Save</button>
         <span class="spacer"></span>
         <label title="How RGB / 0-1 values are wrapped when copied">Copy as
           <select id="copyStyle">
@@ -402,6 +482,17 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         </label>
       </div>
       <div id="list"><div class="empty-list">No colors yet.<br>Load an image, hit Extract or click to drop pins.</div></div>
+      <div class="psec" id="harmSec" hidden>
+        <div class="psec-head"><b>Harmonies</b><span class="basechip" id="harmChip"></span><span id="harmBase" style="font-size:12px"></span><span class="spacer"></span>
+          <button class="ghost" id="harmWhole" title="Suggestions that fit the whole palette">Whole palette</button>
+          <button class="ghost" id="harmClose" title="Close">✕</button></div>
+        <div id="harmRows"></div>
+      </div>
+      <div class="psec" id="valSec" hidden>
+        <div class="psec-head"><b>Values</b><span style="font-size:11px;color:var(--fg3)">dark → light</span><span class="spacer"></span><button class="ghost" id="valClose" title="Close">✕</button></div>
+        <div class="vstrip" id="vStrip"></div>
+        <div id="vMsg"></div>
+      </div>
       <div class="panel-foot">
         <div class="line">
           <select id="copyAllFmt" style="flex:1">
@@ -423,9 +514,18 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         <div class="line">
           <button id="btnShare" class="primary" title="Image, Text and Apps exports">Share / Export…</button>
           <span class="spacer"></span>
+          <button id="btnHarm" class="ghost" title="Harmonies for the whole palette (or click ✦ on a color)">✦ Harmonies</button>
+          <button id="btnValues" class="ghost" title="Show the palette sorted by value (lightness) with gray equivalents">◐ Values</button>
           <button id="btnAutoName" class="ghost" title="Replace every name with an auto name">Auto-name</button>
-          <button id="btnClearAuto" class="ghost" title="Remove auto pins (keeps pins you placed or moved)">✕ Auto</button>
-          <button id="btnClearPins" class="ghost" title="Remove every pin">✕ All</button>
+          <span class="clearwrap">
+            <button id="btnClear" class="ghost" title="Remove groups of colors">Clear ▾</button>
+            <div class="clearmenu" id="clearMenu" hidden>
+              <button data-clear="auto">Auto colors <b></b></button>
+              <button data-clear="pins">Pins you placed <b></b></button>
+              <button data-clear="loaded">Loaded &amp; generated <b></b><small>Library, link, Harmonies</small></button>
+              <button data-clear="all" class="danger">Everything <b></b></button>
+            </div>
+          </span>
         </div>
       </div>
     </aside>
@@ -438,8 +538,8 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--accent)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.10.2</div>
-      <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your History lives in this browser.</p>
+      <div style="font:12px var(--mono);color:var(--accent)" id="aboutVer">v0.11.5</div>
+      <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
       <p style="font-size:11px;color:var(--fg3)">Color names: <a href="https://xkcd.com/color/rgb/" target="_blank" rel="noopener">xkcd color survey</a> (CC0) and <a href="https://github.com/meodai/color-names" target="_blank" rel="noopener">color-name-list</a> © 2017 David Aerne (MIT), filtered.</p>
@@ -482,6 +582,12 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
         <div class="cnote" id="cImgNote"></div>
         <label class="chk"><input type="checkbox" id="cNames" checked> Names + numbers</label>
         <label class="chk" id="cPropWrap"><input type="checkbox" id="cProp"> Widths by coverage</label>
+        <div class="cextras">
+          <div class="csub">Extras</div>
+          <label class="chk" id="cHarmWrap"><input type="checkbox" id="cHarm"> <span id="cHarmLbl">Harmonies</span></label>
+          <label class="chk" id="cValsWrap"><input type="checkbox" id="cVals"> Values</label>
+          <div class="cnote" id="cExtrasNote"></div>
+        </div>
         <label class="chk"><input type="checkbox" id="cCredit" checked> Credit footer</label>
         <button id="btnCardCopy" class="primary" title="Copy the card as an image (paste in Slack, Teams, Figma...). Shortcut on the main screen: C">Copy image</button>
         <button id="btnCardDl">Download PNG</button>
@@ -515,10 +621,27 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
   </div>
 </div>
 
-<!-- Save to History -->
+<!-- Library drop: replace or merge -->
+<div class="modal" id="mergeModal">
+  <div class="dlg namedlg">
+    <header><h3 id="mergeTitle">Load palette</h3><button class="ghost" data-close>✕</button></header>
+    <div class="body">
+      <div class="mrow"><span class="mlbl">Current</span><div class="swprev" id="mergeCur"></div></div>
+      <div class="mrow"><span class="mlbl">Library</span><div class="swprev" id="mergeNew"></div></div>
+      <div class="mbtns">
+        <button id="mergeReplace" class="primary">Replace</button>
+        <button id="mergeMerge">Merge</button>
+        <button data-close class="ghost">Cancel</button>
+      </div>
+      <p class="setnote" id="mergeNote" style="margin:8px 0 0"></p>
+    </div>
+  </div>
+</div>
+
+<!-- Save to Library -->
 <div class="modal" id="nameModal">
   <div class="dlg namedlg">
-    <header><h3>Save to History</h3><button class="ghost" data-close>✕</button></header>
+    <header><h3>Save to Library</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <label>Name <input type="text" id="histName" spellcheck="false"></label>
       <div class="swprev" id="histPrev"></div>
@@ -534,10 +657,10 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
     <div class="body">
       <h4>Modules</h4>
       <div id="modList"></div>
-      <p class="setnote">Each module is a workspace tab. Turn off the ones you don't use. Palette, History and Share work the same in every module.</p>
+      <p class="setnote">Each module is a workspace tab. Turn off the ones you don't use. Palette, Library and Share work the same in every module.</p>
       <h4>Values</h4>
       <label title="ACEScg (AP1) linear values: the sRGB color converted for an ACES render pipeline. Use them when typing raw numbers (VEX, Python, node fields that don't convert)."><input type="checkbox" id="setAces"> Show ACEScg values on each color</label>
-      <p class="setnote">Settings and History are stored in this browser only.</p>
+      <p class="setnote">Settings and the Library are stored in this browser only.</p>
     </div>
   </div>
 </div>
@@ -549,7 +672,7 @@ aside.panel.libdrop{box-shadow:inset 0 0 0 2px var(--accent)}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.10.2", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.11.5", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -767,8 +890,17 @@ function sampleAt(u, v, rad) {
 // ---------------- Auto extraction ----------------
 // extract(true) = fresh: forget deleted auto colors first (Extract button / E key)
 function extract(fresh) {
-  if (fresh === true) state.suppressed = [];
   if (!state.imgLoaded) return toast("Load an image first");
+  if (fresh === true) {
+    // Fresh extract = reset the image scan: drop colors that didn't come from the image
+    state.suppressed = [];
+    const off = state.palette.filter(c => c.u == null).length;
+    if (off) {
+      state.palette = state.palette.filter(c => c.u != null);
+      if (state.title != null && !state.palette.length) state.title = null;
+      setTimeout(() => toast(`Fresh extract: removed ${off} color${off === 1 ? "" : "s"} that weren't from the image`), 0);
+    }
+  }
   const t0 = performance.now();
   const dedupe = $("#dedupe").checked;
   const K = +$("#kCount").value, mergeDE = dedupe ? +$("#mergeDE").value : 2, minPct = +$("#minPct").value, snap = $("#snap").checked;
@@ -927,7 +1059,7 @@ function renderMarkers() {
 
 function rowHTML(c) {
   const v = values(c);
-  const tag = c.u == null ? (c.origin === "history" ? `<span class="tag" title="Loaded from History">HISTORY</span>` : `<span class="tag" title="Came from a share link">SHARED</span>`)
+  const tag = c.u == null ? (c.origin === "history" ? `<span class="tag" title="Loaded from the Library">LIBRARY</span>` : c.origin === "harmony" ? `<span class="tag" title="Added from Harmonies">GENERATED</span>` : `<span class="tag" title="Came from a share link">SHARED</span>`)
     : c.source === "pin" ? `<span class="tag tpin" title="Placed or moved by you, kept on re-extract">MANUAL</span>` : `<span class="tag" title="Coverage in the image">AUTO ${(c.weight * 100).toFixed(1)}%</span>`;
   const btn = key => `<button class="val" data-fmt="${key}" title="Click to copy: ${v[key].copy}"><span class="k">${v[key].k}</span><span class="v">${v[key].show}</span></button>`;
   return `
@@ -938,6 +1070,7 @@ function rowHTML(c) {
         <span class="nbadge">${state.palette.indexOf(c) + 1}</span>
         <input class="name" value="${c.name.replace(/"/g, "&quot;")}" spellcheck="false">
         ${tag}
+        <button class="hx" title="Harmonies from this color">✦</button>
         <button class="x" title="Remove">✕</button>
       </div>
       <div class="vals">${["hex", "rgb", "srgb", "lin", settings.acescg && "aces", "hsv"].filter(Boolean).map(btn).join("")}</div>
@@ -954,7 +1087,7 @@ function renderList() {
   list.innerHTML = "";
   for (const c of state.palette) {
     const row = document.createElement("div");
-    row.className = "row" + (c.id === state.selId ? " sel" : ""); row.dataset.id = c.id; row.draggable = false;
+    row.className = "row" + (c.id === state.selId ? " sel" : "") + (c.id === harm.baseId ? " harmbase" : ""); row.dataset.id = c.id; row.draggable = false;
     row.innerHTML = rowHTML(c);
     list.appendChild(row);
   }
@@ -1049,15 +1182,55 @@ function paintBlocks(out) {
 }
 function renderBlocks() {
   const on = view.mode === "blocks" && state.imgLoaded && state.palette.length > 0;
+  const val = view.mode === "value" && state.imgLoaded;
   $("#imgBox").classList.toggle("blocks", on);
+  $("#imgBox").classList.toggle("value", val);
   if (on) paintBlocks($("#blockCanvas"));
+  else if (val) paintValue($("#blockCanvas"));
+  renderValues();
+  renderHarmonies();
+}
+// Grayscale by perceptual lightness (OKLab L of a gray = cbrt(Y)).
+// Tones: posterize into n groups split evenly across the image's own value
+// range (2nd-98th percentile), shown as evenly spaced greys (notan-style read).
+function paintValue(out) {
+  const b = blockBase(), n = +$("#valTones").value, N = b.W * b.H;
+  out.width = b.W; out.height = b.H;
+  const Ls = new Float32Array(N), hist = new Uint32Array(256);
+  for (let p = 0; p < N; p++) {
+    const L = Math.cbrt(0.2126 * b.lin[p*3] + 0.7152 * b.lin[p*3+1] + 0.0722 * b.lin[p*3+2]);
+    Ls[p] = L; hist[Math.min(255, (L * 255) | 0)]++;
+  }
+  let lo = 0, hi = 1;
+  if (n) {
+    let acc = 0; const a = N * 0.02, z = N * 0.98;
+    for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= a) { lo = i / 255; break; } }
+    acc = 0;
+    for (let i = 0; i < 256; i++) { acc += hist[i]; if (acc >= z) { hi = (i + 1) / 255; break; } }
+    if (hi - lo < 0.05) { lo = 0; hi = 1; }
+  }
+  const cx = out.getContext("2d"), im = cx.createImageData(b.W, b.H);
+  for (let p = 0; p < N; p++) {
+    let L = Ls[p];
+    if (n) {
+      const k = Math.min(n - 1, Math.max(0, Math.floor((L - lo) / (hi - lo) * n)));
+      L = 0.12 + 0.83 * k / (n - 1);                  // groups shown as evenly spaced greys
+    }
+    const g = l2s(L * L * L);
+    im.data[p*4] = im.data[p*4+1] = im.data[p*4+2] = g; im.data[p*4+3] = 255;
+  }
+  cx.putImageData(im, 0, 0);
+  return out;
 }
 let blocksRaf = 0;
 const liveBlocks = () => { cancelAnimationFrame(blocksRaf); blocksRaf = requestAnimationFrame(renderBlocks); };
 function setView(m) {
   view.mode = m;
-  $("#vOrig").classList.toggle("on", m === "orig"); $("#vBlocks").classList.toggle("on", m === "blocks");
+  $("#vOrig").classList.toggle("on", m === "orig"); $("#vBlocks").classList.toggle("on", m === "blocks"); $("#vValue").classList.toggle("on", m === "value");
   $("#blockOpts").classList.toggle("dim", m !== "blocks");
+  $("#blockOpts").style.display = m === "value" ? "none" : ""; $("#valueOpts").style.display = m === "value" ? "" : "none";
+  $("#valueOpts").classList.toggle("dim", m !== "value");
+  if (m === "value") showValues(true);
   renderBlocks();
 }
 const byId = id => state.palette.find(c => c.id === +id);
@@ -1098,6 +1271,8 @@ $("#list").addEventListener("click", e => {
     val.classList.add("copied"); setTimeout(() => val.classList.remove("copied"), 500);
   } else if (e.target.closest(".chip")) {
     copyText(toHex(c));
+  } else if (e.target.closest(".hx")) {
+    openHarmonies(c.id);
   } else if (e.target.closest(".x")) {
     removeColor(c.id);
   }
@@ -1243,6 +1418,8 @@ $("#snap").addEventListener("change", extract);
 $("#dedupe").addEventListener("change", () => { $("#mergeDE").disabled = !$("#dedupe").checked; extract(); });
 $("#vOrig").addEventListener("click", () => setView("orig"));
 $("#vBlocks").addEventListener("click", () => setView("blocks"));
+$("#vValue").addEventListener("click", () => setView("value"));
+$("#valTones").addEventListener("change", renderBlocks);
 for (const id of ["blockSize", "cleanup"]) {
   const el = $("#" + id);
   el.addEventListener("input", () => { $("#" + id + "V").textContent = el.value; liveBlocks(); });
@@ -1260,8 +1437,41 @@ $("#showMarkers").addEventListener("change", renderMarkers);
 $("#copyStyle").addEventListener("change", renderList);
 $("#decimals").addEventListener("change", renderList);
 $("#btnAutoName").addEventListener("click", () => { state.palette.forEach(c => c.userNamed = false); render(); toast("Names refreshed"); });
-$("#btnClearAuto").addEventListener("click", () => { state.palette.forEach(suppressAuto); state.palette = state.palette.filter(c => c.source !== "auto"); render(); });
-$("#btnClearPins").addEventListener("click", () => { state.palette = []; state.pinCounter = 0; state.selId = null; state.suppressed = []; render(); });
+// Clear menu: remove colors by where they came from
+const CLEAR_GROUPS = {
+  auto: c => c.source === "auto",
+  pins: c => c.source === "pin" && c.u != null,
+  loaded: c => c.u == null,
+  all: () => true,
+};
+$("#btnClear").addEventListener("click", e => {
+  e.stopPropagation();
+  const m = $("#clearMenu");
+  $$("#clearMenu [data-clear]").forEach(b => { const n = state.palette.filter(CLEAR_GROUPS[b.dataset.clear]).length; $("b", b).textContent = n; b.disabled = !n; });
+  m.hidden = !m.hidden;
+  if (!m.hidden) {
+    // Place next to the button, always inside the window (opens up, or down if no room)
+    const r = $("#btnClear").getBoundingClientRect(), mw = m.offsetWidth, mh = m.offsetHeight, pad = 8;
+    m.style.left = clamp(r.left, pad, innerWidth - mw - pad) + "px";
+    m.style.top = (r.top - mh - 6 >= pad ? r.top - mh - 6 : Math.min(r.bottom + 6, innerHeight - mh - pad)) + "px";
+  }
+});
+window.addEventListener("resize", () => { $("#clearMenu").hidden = true; });
+document.addEventListener("click", e => { if (!e.target.closest(".clearwrap")) $("#clearMenu").hidden = true; });
+$("#clearMenu").addEventListener("click", e => {
+  const b = e.target.closest("[data-clear]"); if (!b || b.disabled) return;
+  const g = b.dataset.clear, test = CLEAR_GROUPS[g];
+  const n = state.palette.filter(test).length;
+  if (g === "all") { state.palette = []; state.pinCounter = 0; state.selId = null; state.suppressed = []; }
+  else {
+    if (g === "auto") state.palette.forEach(suppressAuto);
+    state.palette = state.palette.filter(c => !test(c));
+    if (state.selId != null && !byId(state.selId)) state.selId = null;
+  }
+  $("#clearMenu").hidden = true;
+  render();
+  toast(`Removed ${n} color${n === 1 ? "" : "s"}`);
+});
 
 $("#btnOpen").addEventListener("click", () => $("#file").click());
 $("#file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
@@ -1278,7 +1488,8 @@ window.addEventListener("keydown", e => {
   if (e.target.matches("input,select,textarea")) return;
   if (e.key === "e" || e.key === "E") extract(true);
   if (e.key === "b" || e.key === "B") setView(view.mode === "blocks" ? "orig" : "blocks");
-  if ((e.key === "h" || e.key === "H") && !$(".modal.open")) toggleHistory();
+  if (e.key === "v" || e.key === "V") setView(view.mode === "value" ? "orig" : "value");
+  if ("hHlL".includes(e.key) && !e.ctrlKey && !e.metaKey && !$(".modal.open")) toggleHistory();   // L = Library (H kept as alias)
   if ((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !$(".modal.open")) quickCopyCard();
   if (e.key === "Escape") { const open = $$(".modal.open"); if (open.length) open.forEach(m => m.classList.remove("open")); else select(null); }
   if ((e.key === "Delete" || e.key === "Backspace") && state.selId != null && !$(".modal.open")) { e.preventDefault(); removeColor(state.selId); }
@@ -1375,6 +1586,26 @@ function drawLabel(ctx, L, x, y, fs, maxW, fg, fg2, mono, sans, lh) {
     ctx.fillText(l.t, x, y + li * lh, maxW);
   });
 }
+// ---- Card extras (Harmonies / Values), mirrored from the open panel sections ----
+function harmCardData() {
+  const base = harm.baseId != null ? byId(harm.baseId) : null;
+  if ($("#harmSec").hidden || (!base && !harm.whole)) return null;
+  return { title: harm.whole ? "Harmonies · whole palette" : `Harmonies · from ${base.name}`, rows: harm.whole ? wholeSets() : harmonySets(base) };
+}
+function valCardData() {
+  if (!valUI.open || !state.palette.length) return null;
+  const P = state.palette.map(c => ({ c, L: oklab(c.r, c.g, c.b)[0] })).sort((a, b) => a.L - b.L);
+  const warn = [];
+  for (let i = 1; i < P.length; i++) if (P[i].L - P[i - 1].L < 0.03) warn.push(`${P[i - 1].c.name} and ${P[i].c.name} read the same in grayscale`);
+  return { items: P, warn: warn.slice(0, 3) };
+}
+function autoCardExtras() {
+  const h = harmCardData(), v = valCardData();
+  $("#cHarmWrap").style.display = h ? "" : "none"; $("#cHarm").checked = !!h;
+  $("#cValsWrap").style.display = v ? "" : "none"; $("#cVals").checked = !!v;
+  if (h) $("#cHarmLbl").textContent = h.title.replace("Harmonies · ", "Harmonies (") + ")";
+  $("#cExtrasNote").textContent = h || v ? "" : "Open ✦ Harmonies or ◐ Values to add them here.";
+}
 function renderCard() {
   const cv = $("#cardCanvas"), ctx = cv.getContext("2d");
   const P = state.palette, dark = $("#cTheme").value === "dark";
@@ -1385,7 +1616,7 @@ function renderCard() {
   const canProp = P.length > 0 && P.every(c => c.source === "auto" && c.weight != null);
   $("#cProp").disabled = !canProp;
   $("#cPropWrap").classList.toggle("off", !canProp);
-  $("#cPropWrap").title = canProp ? "Swatch width follows how much of the image each color covers" : "Only for auto-extracted colors (manual pins, History and links have no coverage)";
+  $("#cPropWrap").title = canProp ? "Swatch width follows how much of the image each color covers" : "Only for auto-extracted colors (manual pins, Library and links have no coverage)";
   $("#cImgModeWrap").style.display = withImg ? "" : "none";
   $("#cImgOn").disabled = !state.imgLoaded;
   const W = 1600, pad = 64, inner = W - pad * 2, mono = "ui-monospace, Consolas, 'SF Mono', Menlo, monospace";
@@ -1402,6 +1633,11 @@ function renderCard() {
   const nLab = labelLines({ r: 0, g: 0, b: 0, name: "" }, labels, 0, names).length;
   if (layout === "strip") { stripH = 300; H += stripH + (nLab ? 24 + nLab * 30 : 0); }
   else { cols = Math.min(n, n <= 4 ? n : n <= 6 ? 3 : n <= 10 ? 5 : 6); rows = Math.ceil(n / cols); cardW = (inner - gap * (cols - 1)) / cols; cardH = cardW * 0.8 + (nLab ? 20 + nLab * 28 : 0); H += rows * cardH + (rows - 1) * gap; }
+  // Extras
+  const hx = $("#cHarm").checked ? harmCardData() : null, vx = $("#cVals").checked ? valCardData() : null;
+  const SEC_T = 54, HROW = 74, VBLK = 56;
+  if (hx) H += 44 + SEC_T + hx.rows.length * HROW;
+  if (vx) H += 44 + SEC_T + VBLK * 2 + 30 + vx.warn.length * 28;
   const footH = credit ? 70 : 32; H += footH;
 
   cv.width = W; cv.height = Math.round(H);
@@ -1443,6 +1679,41 @@ function renderCard() {
     });
     y += rows * cardH + (rows - 1) * gap;
   }
+  const secHead = t => {
+    y += 22; ctx.fillStyle = dark ? "#2a2d33" : "#dcd7cc"; ctx.fillRect(pad, y, inner, 1); y += 22;
+    ctx.fillStyle = fg; ctx.font = `700 26px ${sans}`; ctx.textBaseline = "top"; ctx.fillText(t, pad, y); y += SEC_T;
+  };
+  if (hx) {
+    secHead(hx.title);
+    const lblW = 230, sw = inner - lblW;
+    hx.rows.forEach(([label, cs]) => {
+      ctx.fillStyle = fg2; ctx.font = `500 20px ${sans}`; ctx.textBaseline = "middle"; ctx.fillText(label, pad, y + 22);
+      const g = 8, w = (sw - g * (cs.length - 1)) / cs.length;
+      cs.forEach((c, i) => {
+        const x = pad + lblW + i * (w + g);
+        ctx.fillStyle = toHex(c); roundRect(ctx, x, y, w, 44, 8); ctx.fill();
+        ctx.fillStyle = fg2; ctx.font = `400 15px ${mono}`; ctx.textBaseline = "top"; ctx.fillText(toHex(c), x + 2, y + 50, w - 4);
+      });
+      y += HROW;
+    });
+  }
+  if (vx) {
+    secHead("Values · dark → light");
+    const n2 = vx.items.length, w = inner / n2;
+    ctx.save(); roundRect(ctx, pad, y, inner, VBLK * 2, 12); ctx.clip();
+    vx.items.forEach((p, i) => {
+      const x = pad + i * w, g = Math.round(l2s(p.L ** 3));
+      ctx.fillStyle = toHex(p.c); ctx.fillRect(Math.floor(x), y, Math.ceil(w) + 1, VBLK);
+      ctx.fillStyle = `rgb(${g},${g},${g})`; ctx.fillRect(Math.floor(x), y + VBLK, Math.ceil(w) + 1, VBLK);
+    });
+    ctx.restore();
+    y += VBLK * 2 + 6;
+    ctx.fillStyle = fg2; ctx.font = `400 15px ${mono}`; ctx.textBaseline = "top"; ctx.textAlign = "center";
+    vx.items.forEach((p, i) => ctx.fillText(`${p.c.name} ${Math.round(p.L * 100)}`, pad + (i + 0.5) * w, y, w - 6));
+    ctx.textAlign = "left"; y += 24;
+    ctx.fillStyle = "#d9a441"; ctx.font = `500 18px ${sans}`;
+    vx.warn.forEach(t => { ctx.fillText("⚠ " + t, pad, y); y += 28; });
+  }
   if (credit) {
     ctx.textBaseline = "alphabetic"; ctx.font = `500 18px ${sans}`; ctx.fillStyle = fg2;
     ctx.textAlign = "left"; ctx.fillText(`${n} colors`, pad, H - pad / 2 - 4);
@@ -1454,11 +1725,12 @@ $$("#paneCard input, #paneCard select").forEach(el => el.addEventListener("input
 // Include the image only when the palette came from it (auto or pins placed on it).
 // Palettes loaded from History or a link default to a palette-only card.
 function autoCardImage() {
+  autoCardExtras();
   const fromImage = state.imgLoaded && state.palette.some(c => c.u != null);
   $("#cImgOn").checked = fromImage;
   $("#cImgNote").textContent = !state.imgLoaded ? "No image loaded."
     : fromImage ? ""
-    : `Image off: palette came from ${state.palette.some(c => c.origin === "history") ? "History" : "a link"}.`;
+    : `Image off: palette came from ${state.palette.some(c => c.origin === "history") ? "the Library" : "a link"}.`;
 }
 $("#cImgOn").addEventListener("change", () => { $("#cImgNote").textContent = ""; });
 $("#btnCardDl").addEventListener("click", () => $("#cardCanvas").toBlob(b => download(b, base() + "_card.png"), "image/png"));
@@ -1622,7 +1894,7 @@ function renderShare() {
     : shareFmt === "md" ? "Notion, GitHub, Obsidian (tables render there). Not for email: use the PNG card or plain text."
     : shareFmt === "ase" ? "Adobe Swatch Exchange: Photoshop, Illustrator, InDesign, Affinity, Procreate import."
     : shareFmt === "gpl" ? "GIMP palette: GIMP, Krita, Inkscape, Aseprite."
-    : shareFmt === "json" ? "Full data: HEX, RGB, sRGB, linear and ACEScg per color. Can be imported into History."
+    : shareFmt === "json" ? "Full data: HEX, RGB, sRGB, linear and ACEScg per color. Can be imported into the Library."
     : shareFmt === "css" ? "CSS custom properties, one per color name."
     : "Works anywhere.";
 }
@@ -1662,6 +1934,115 @@ function loadFromHash() {
   $("#drop").innerHTML = `<b>Shared palette: ${cols.length} colors</b><span>Drop an image to see it in Blocks view with this palette</span>`;
   toast(`Loaded shared palette (${cols.length} colors)`);
 }
+
+// ---------------- OKLCH helpers ----------------
+function oklabToLinear(L, a, b) {
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+  const s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3;
+  return [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+         -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+         -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s];
+}
+const toLch = c => { const [L, a, b] = oklab(c.r, c.g, c.b); return { L, C: Math.hypot(a, b), h: (Math.atan2(b, a) * 180 / Math.PI + 360) % 360 }; };
+// OKLCH -> sRGB 0-255, keeping L and h, reducing chroma until it fits in sRGB
+function fromLch(L, C, h) {
+  L = clamp(L, 0, 1); h = ((h % 360) + 360) % 360;
+  const rad = h * Math.PI / 180, inGamut = rgb => rgb.every(v => v >= -1e-4 && v <= 1 + 1e-4);
+  let lo = 0, hi = C, rgb = oklabToLinear(L, C * Math.cos(rad), C * Math.sin(rad));
+  if (!inGamut(rgb)) {
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) / 2, t = oklabToLinear(L, mid * Math.cos(rad), mid * Math.sin(rad));
+      if (inGamut(t)) { lo = mid; rgb = t; } else hi = mid;
+    }
+    rgb = oklabToLinear(L, lo * Math.cos(rad), lo * Math.sin(rad));
+  }
+  const [r, g, b] = rgb.map(v => Math.round(l2s(v)));
+  return { r, g, b };
+}
+
+// ---------------- Harmonies ----------------
+const harm = { baseId: null, whole: false };
+function harmonySets(c) {
+  const { L, C, h } = toLch(c), Cn = Math.max(C, 0.06);  // give near-greys a little chroma so hues show
+  const sh = [0.28, 0.42, 0.56, 0.70, 0.84];
+  return [
+    ["Complementary", [fromLch(L - 0.14, Cn, h + 180), fromLch(L, Cn, h + 180), fromLch(L + 0.14, Cn, h + 180)]],
+    ["Analogous", [fromLch(L, Cn, h - 60), fromLch(L, Cn, h - 30), fromLch(L, Cn, h + 30), fromLch(L, Cn, h + 60)]],
+    ["Triad", [fromLch(L, Cn, h + 120), fromLch(L, Cn, h + 240)]],
+    ["Split", [fromLch(L, Cn, h + 150), fromLch(L, Cn, h + 210)]],
+    ["Shades", sh.map(l => fromLch(l, C * (1 - Math.abs(l - 0.56) * 0.9), h))],
+  ];
+}
+function wholeSets() {
+  const P = state.palette.map(c => ({ c, ...toLch(c), w: c.weight != null ? c.weight : 1 / state.palette.length }));
+  const chroma = P.filter(p => p.C >= 0.04);
+  const dom = (chroma.length ? chroma : P).reduce((a, b) => (b.C * Math.sqrt(b.w) > a.C * Math.sqrt(a.w) ? b : a));
+  const avgL = P.reduce((s, p) => s + p.L, 0) / P.length;
+  const medC = chroma.length ? chroma.map(p => p.C).sort((a, b) => a - b)[chroma.length >> 1] : 0.1;
+  // Biggest hue gaps between the palette's colored swatches
+  const hs = chroma.map(p => p.h).sort((a, b) => a - b), gaps = [];
+  for (let i = 0; i < hs.length; i++) { const a = hs[i], b = i + 1 < hs.length ? hs[i + 1] : hs[0] + 360; gaps.push({ mid: (a + b) / 2, size: b - a }); }
+  gaps.sort((a, b) => b.size - a.size);
+  const fills = (hs.length ? gaps.slice(0, 3) : [{ mid: 30 }, { mid: 150 }, { mid: 270 }]).map(g => fromLch(avgL, medC, g.mid));
+  return [
+    ["Accent", [fromLch(dom.L, Math.max(dom.C, 0.08), dom.h + 180), fromLch(clamp(dom.L + 0.12, 0, 0.95), Math.max(dom.C, 0.08), dom.h + 180)]],
+    ["Fill the gaps", fills],
+    ["Neutrals", [fromLch(0.18, 0.02, dom.h), fromLch(0.45, 0.025, dom.h), fromLch(0.75, 0.02, dom.h), fromLch(0.94, 0.012, dom.h)]],
+  ];
+}
+function renderHarmonies() {
+  const sec = $("#harmSec");
+  const base = harm.baseId != null ? byId(harm.baseId) : null;
+  if ((!base && !harm.whole) || !state.palette.length) { sec.hidden = true; harm.baseId = null; harm.whole = false; $("#btnHarm").classList.remove("on"); return; }
+  sec.hidden = false;
+  $("#btnHarm").classList.add("on");
+  const sets = harm.whole ? wholeSets() : harmonySets(base);
+  $("#harmChip").style.background = harm.whole ? `linear-gradient(90deg,${state.palette.slice(0, 6).map(toHex).join(",")})` : toHex(base);
+  $("#harmBase").textContent = harm.whole ? "whole palette" : `from ${base.name}`;
+  $("#harmWhole").classList.toggle("on", harm.whole);
+  $("#harmRows").innerHTML = sets.map(([label, cols]) => `
+    <div class="hrow"><span class="lbl">${label}</span><div class="hsw">${cols.map(c => `<button style="background:${toHex(c)}" data-hex="${toHex(c)}" title="${toHex(c)}: click to add"></button>`).join("")}</div></div>`).join("");
+}
+function openHarmonies(id) { harm.baseId = id; harm.whole = false; renderList(); renderHarmonies(); $("#harmSec").scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+$("#harmWhole").addEventListener("click", () => { harm.whole = !harm.whole; if (!harm.whole && harm.baseId == null) { renderHarmonies(); return; } renderHarmonies(); });
+$("#harmClose").addEventListener("click", () => { harm.baseId = null; harm.whole = false; renderList(); renderHarmonies(); });
+$("#harmRows").addEventListener("click", e => {
+  const b = e.target.closest("button[data-hex]"); if (!b) return;
+  const rgb = hexToRgb(b.dataset.hex);
+  state.palette.push({ id: state.nextId++, source: "pin", origin: "harmony", ...rgb, name: "", u: null, v: null });
+  render();
+  $("#list").scrollTop = $("#list").scrollHeight;
+  toast(`Added ${b.dataset.hex}`);
+});
+
+// ---------------- Values (lightness check) ----------------
+const valUI = { open: false };
+function showValues(on) { valUI.open = on; renderValues(); }
+function renderValues() {
+  const sec = $("#valSec");
+  $("#btnValues").classList.toggle("on", valUI.open);
+  if (!valUI.open || !state.palette.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const P = state.palette.map(c => ({ c, L: oklab(c.r, c.g, c.b)[0] })).sort((a, b) => a.L - b.L);
+  $("#vStrip").innerHTML = P.map(p => {
+    const g = Math.round(l2s(p.L ** 3));
+    return `<div title="${esc(p.c.name)} ${toHex(p.c)} · value ${Math.round(p.L * 100)}"><i style="background:${toHex(p.c)}"></i><i style="background:rgb(${g},${g},${g})"></i><span>${Math.round(p.L * 100)}</span></div>`;
+  }).join("");
+  const clash = [];
+  for (let i = 1; i < P.length; i++) if (P[i].L - P[i - 1].L < 0.03) clash.push(`${P[i - 1].c.name} and ${P[i].c.name}`);
+  $("#vMsg").innerHTML = clash.length
+    ? clash.slice(0, 3).map(t => `<div class="vwarn">⚠ ${esc(t)} read the same in grayscale</div>`).join("") + (clash.length > 3 ? `<div class="vwarn">+${clash.length - 3} more</div>` : "")
+    : `<div class="vok">Every color has its own value.</div>`;
+}
+$("#btnValues").addEventListener("click", () => showValues(!valUI.open));
+$("#btnHarm").addEventListener("click", () => {
+  if (!need()) return;
+  const open = !$("#harmSec").hidden;
+  if (open) { harm.baseId = null; harm.whole = false; } else harm.whole = true;
+  renderList(); renderHarmonies();
+});
+$("#valClose").addEventListener("click", () => showValues(false));
 
 // ---------------- Modules ----------------
 // Each workspace is a module: its own header tab, its own panel (el) and
@@ -1705,7 +2086,7 @@ $("#modList").addEventListener("change", e => {
 });
 $("#setAces").addEventListener("change", e => { settings.acescg = e.target.checked; saveSettings(); renderList(); });
 
-// ---------------- History (palette library) ----------------
+// ---------------- Library (palette library, UI name; code still says history/lib) ----------------
 // Only colors + names are stored, never the image. Lives in localStorage.
 const LIB_KEY = "chromadrop.history.v1";
 let lib = LS.get(LIB_KEY, []);   // [{ id, name, created, colors: [{ hex, name, w }] }], array order = manual order
@@ -1715,7 +2096,7 @@ const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;"
 const hexToRgb = h => ({ r: parseInt(h.slice(1, 3), 16), g: parseInt(h.slice(3, 5), 16), b: parseInt(h.slice(5, 7), 16) });
 const newLibId = () => "p" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 function saveLib() {
-  if (!LS.set(LIB_KEY, lib)) toast("Could not save History (storage blocked or full)");
+  if (!LS.set(LIB_KEY, lib)) toast("Could not save the Library (storage blocked or full)");
   $("#histCount").textContent = lib.length;
 }
 // Sort key for "Color": the most saturated color, weighted by coverage (OKLCH chroma).
@@ -1753,12 +2134,12 @@ function renderLib(flashId) {
   if (!lib.length) { list.innerHTML = `<div class="hist-empty">No saved palettes yet.<br>Only colors and names are stored, never images.</div>`; return; }
   const manual = libSort.mode === "manual";
   list.innerHTML = sortedLib().map(p => `
-    <div class="hcard${p.id === flashId ? " flash" : ""}" data-id="${p.id}" draggable="true" title="${manual ? "Drag to reorder, or drop on the palette panel to load" : "Drop on the palette panel to load. Switch sort to Manual to reorder."}">
+    <div class="hcard${p.id === flashId ? " flash" : ""}" data-id="${p.id}" draggable="true" title="${manual ? "Drag to reorder, or drag onto the palette to load (asks Replace or Merge)" : "Drag onto the palette to load (asks Replace or Merge). Switch sort to Manual to reorder."}">
       <div class="hstrip">${p.colors.map(c => `<i style="background:${c.hex}" data-hex="${c.hex}" title="${esc(c.name || "")} ${c.hex} (click to copy)"></i>`).join("")}</div>
       <div class="hmeta"><span class="hname">${esc(p.name)}</span><span class="hdate">${p.colors.length} · ${fmtDate(p.created)}</span></div>
       <div class="hact">
         <button data-act="load" title="Load into the stage (replaces the current palette)">Load</button>
-        <button data-act="add" title="Add these colors to the current palette">+ Add</button>
+        <button data-act="add" title="Merge: add the colors you don't have yet">+ Add</button>
         <button data-act="ren" title="Rename">✎</button>
         <button data-act="del" title="Delete">✕</button>
       </div>
@@ -1794,7 +2175,7 @@ function commitSave() {
   toggleHistory(true);
   renderLib(entry.id);
   $("#histList").scrollTop = 0;
-  toast(`Saved "${name}" to History`);
+  toast(`Saved "${name}" to the Library`);
 }
 $("#btnSavePal").addEventListener("click", openSaveDialog);
 $("#histSaveBtn").addEventListener("click", openSaveDialog);
@@ -1824,13 +2205,38 @@ historyEl.addEventListener("drop", e => {
 $("#histHandle").addEventListener("dragenter", () => toggleHistory(true));
 
 // Card actions
+// Library colors not already in the current palette (exact HEX match)
+function newLibColors(p) {
+  const have = new Set(state.palette.map(toHex));
+  return p.colors.filter(c => !have.has(c.hex.toUpperCase()));
+}
 function loadLibEntry(p, append) {
-  const cols = p.colors.map(c => ({ id: state.nextId++, source: "pin", origin: "history", ...hexToRgb(c.hex), name: c.name || "", userNamed: !!c.name, u: null, v: null }));
+  const src = append ? newLibColors(p) : p.colors;
+  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: "history", ...hexToRgb(c.hex), name: c.name || "", userNamed: !!c.name, u: null, v: null }));
   state.palette = append ? [...state.palette, ...cols] : cols;
   if (!append) { state.title = p.name; state.selId = null; }
   render();
-  toast(append ? `Added ${cols.length} colors from "${p.name}"` : `Loaded "${p.name}"`);
+  const skipped = p.colors.length - cols.length;
+  toast(append ? `Merged ${cols.length} color${cols.length === 1 ? "" : "s"} from "${p.name}"` + (skipped ? ` (${skipped} already there)` : "") : `Loaded "${p.name}"`);
 }
+// Dropped on a non-empty palette: ask Replace or Merge
+let mergePending = null;
+function askReplaceOrMerge(p) {
+  if (!state.palette.length) { loadLibEntry(p, false); return; }
+  mergePending = p;
+  const fresh = newLibColors(p).length;
+  $("#mergeTitle").textContent = `Load "${p.name}"`;
+  $("#mergeCur").innerHTML = state.palette.map(c => `<i style="background:${toHex(c)}"></i>`).join("");
+  $("#mergeNew").innerHTML = p.colors.map(c => `<i style="background:${c.hex}"></i>`).join("");
+  $("#mergeReplace").textContent = `Replace (${p.colors.length} colors)`;
+  $("#mergeMerge").textContent = fresh ? `Merge (+${fresh} new)` : "Merge (nothing new)";
+  $("#mergeMerge").disabled = !fresh;
+  $("#mergeNote").textContent = "Replace swaps the current colors for this palette. Merge adds only the colors you don't have yet.";
+  $("#mergeModal").classList.add("open");
+  setTimeout(() => $("#mergeReplace").focus(), 30);
+}
+$("#mergeReplace").addEventListener("click", () => { $("#mergeModal").classList.remove("open"); if (mergePending) loadLibEntry(mergePending, false); mergePending = null; });
+$("#mergeMerge").addEventListener("click", () => { $("#mergeModal").classList.remove("open"); if (mergePending) loadLibEntry(mergePending, true); mergePending = null; });
 function startRename(card, p) {
   const span = $(".hname", card);
   const inp = document.createElement("input"); inp.type = "text"; inp.value = p.name;
@@ -1900,14 +2306,14 @@ panelEl.addEventListener("drop", e => {
   panelEl.classList.remove("libdrop");
   const id = e.dataTransfer.getData(LIB_MIME); if (!id) return;
   e.preventDefault();
-  const p = lib.find(x => x.id === id); if (p) loadLibEntry(p, e.shiftKey);
+  const p = lib.find(x => x.id === id); if (p) askReplaceOrMerge(p);
 });
 
 // Export / import (backup, or move History to another browser/computer)
 $("#histExport").addEventListener("click", () => {
-  if (!lib.length) return toast("History is empty");
-  const data = { type: "chromadrop-history", version: 1, app: `${APP.name} v${APP.version}`, exported: new Date().toISOString(), palettes: lib };
-  download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `chromadrop_history_${new Date().toISOString().slice(0, 10)}.json`);
+  if (!lib.length) return toast("Library is empty");
+  const data = { type: "chromadrop-library", version: 1, app: `${APP.name} v${APP.version}`, exported: new Date().toISOString(), palettes: lib };
+  download(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), `chromadrop_library_${new Date().toISOString().slice(0, 10)}.json`);
 });
 $("#histImport").addEventListener("click", () => $("#histFile").click());
 $("#histFile").addEventListener("change", e => { if (e.target.files[0]) importLibFile(e.target.files[0]); e.target.value = ""; });
@@ -1923,7 +2329,7 @@ function importLibFile(file) {
       colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: String(c.name || "").slice(0, 60), w: Number.isFinite(c.w) ? c.w : null })),
     });
     let incoming = [];
-    if (data && data.type === "chromadrop-history" && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
+    if (data && (data.type === "chromadrop-library" || data.type === "chromadrop-history") && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
     else if (data && Array.isArray(data.colors)) incoming = [clean({ name: data.name, colors: data.colors.map(c => ({ hex: c.hex, name: c.name, w: c.coverage })) })];
     incoming = incoming.filter(p => p.colors.length);
     if (!incoming.length) return toast("No palettes found in that file");

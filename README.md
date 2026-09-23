@@ -35,13 +35,15 @@ The palette shows up as a new swatch group named after your palette, with the ex
   <img src="docs/chromadrop-c4d-share.jpg" alt="Share window, C4D tab with the generated script" width="820">
 </p>
 
-## Features (v0.10.2)
+## Features (v0.11.5)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
-- **History**: a palette library in a drawer over the image (`H`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
+- **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
 - **ACEScg values**: every color also shows its ACEScg (AP1 linear) value, for raw numbers in an ACES render pipeline (VEX, Python, typed node values). Toggle in Settings.
 - **Smart pins**: auto extract (weighted k-means in CIELAB) drops numbered pins on each dominant color. Controls for max colors, min coverage % and "snap to flat" (exact colors for flat art). Sliders update live.
 - **Edit pins freely**: drag any pin to resample, click empty space to add one, select and press `Del` to remove. Pins you add or move are kept when you re-extract. Adjustable sample radius and loupe.
+- **Harmonies**: click ✦ on any color for Complementary, Analogous, Triad, Split and Shades suggestions (computed in OKLCH, kept inside sRGB), or "Whole palette" for accents that fill hue gaps plus tinted neutrals. Click a suggestion to add it.
+- **Value check**: View > Value (`V`) shows the image in grayscale, with Tones to split it into 2-5 value groups (notan-style). The Values strip sorts the palette dark to light and warns when two colors read the same in grayscale.
 - **Remove similar**: drops auto colors that are too close to each other or to your pins (adjustable ΔE).
 - **Auto names**: every color gets a short, unique, single-word name (`sage`, `jaffa`, `trout`...) from the nearest match in OKLab. Edit a name to lock it; "Auto-name" refreshes all.
 - **Click to copy**: HEX, RGB 0-255, sRGB 0-1, Linear 0-1, HSV. Wrap styles: plain, Python tuple, VEX `{}`, `c4d.Vector()`, GLSL `vec3()`.
@@ -55,16 +57,16 @@ The palette shows up as a new swatch group named after your palette, with the ex
 
 One window, three categories:
 
-- **Image**: PNG card, strip or grid, with or without the image (turns itself off for palettes loaded from History or a link), names, HEX / RGB / Linear / ACEScg labels, dark or light theme. Download or copy straight into a chat.
+- **Image**: PNG card, strip or grid, optional Extras (the open Harmonies and Values sections), with or without the image (turns itself off for palettes loaded from the Library or a link), names, HEX / RGB / Linear / ACEScg labels, dark or light theme. Download or copy straight into a chat.
 - **Text**: Markdown table (GitHub, Notion, Obsidian), Slack message, plain text, and a **link** where the palette lives in the URL (no upload). Whoever opens it can drop their own image and see it rebuilt with your palette in Blocks view.
 - **Apps**: Cinema 4D swatch script, ASE (Adobe, Affinity, Procreate import), GPL (GIMP, Krita, Inkscape), JSON, CSS.
 
 ## Run
 
 - **Online**: <https://kumodot.github.io/Chromadrop/>
-- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.10.2.html` in any modern browser. No install, no build.
+- **Local**: double-click `Run_Chromadrop.bat`, or open `Chromadrop_v0.11.5.html` in any modern browser. No install, no build.
 
-Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `H` history, `C` copy the card as an image, `Del` remove selected pin, `Esc` deselect.
+Load images with Open, drag and drop, or `Ctrl+V`. Shortcuts: `E` extract, `B` blocks view, `L` library, `C` copy the card as an image, `V` value view, `Del` remove selected pin, `Esc` deselect.
 
 ## Notes on color space
 
