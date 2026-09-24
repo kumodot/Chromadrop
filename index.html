@@ -1,11 +1,15 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.6
+  Chromadrop v0.12.7
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.7 (2026-09-24)
+    - Share > Text: "Show my credits in the viewer" checkbox. Off adds c=0 to
+      the link: the viewer hides the Ko-fi button and the credit line, and
+      its PNG card / PDF downloads come without the credit footer.
   v0.12.6 (2026-09-24)
     - Viewer: share links can open a read-only page made for whoever gets
       the palette (#...&v=1). Big swatches, every value per color (HEX, RGB,
@@ -182,7 +186,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.6 · image palette extractor</title>
+<title>Chromadrop v0.12.7 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -539,7 +543,7 @@ body.viewing .app{display:none}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.6</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.7</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -764,7 +768,7 @@ body.viewing .app{display:none}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.6</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.7</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -858,6 +862,7 @@ body.viewing .app{display:none}
         </div>
         <div class="shareopts" id="linkOpts">
           <label title="On: the link opens a read-only page made for artists (big swatches, click to copy, downloads). Off: it opens the full editor."><input type="checkbox" id="sViewer" checked> Link opens the read-only viewer</label>
+          <label title="Off: the viewer shows no author name or Ko-fi button, and its PNG card / PDF downloads have no credit footer"><input type="checkbox" id="sCredits" checked> Show my credits in the viewer</label>
         </div>
         <textarea id="shareText" readonly spellcheck="false"></textarea>
         <div class="sharefoot">
@@ -961,7 +966,7 @@ body.viewing .app{display:none}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.6", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.7", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -2287,11 +2292,14 @@ function renderViewer() {
       <div class="vvals">${V_FMTS.map(([k, l]) => `<button class="vval${k === viewer.fmt ? " on" : ""}" data-i="${i}" data-k="${k}" title="Click to copy"><em>${l}</em><code>${esc(V[k].show)}</code></button>`).join("")}</div>
     </div>`;
   }).join("");
-  $("#vCredit").innerHTML = `Read-only view · made with <a href="${PUBLIC_URL}" target="_blank" rel="noopener">${APP.name}</a> v${APP.version} · Marcelo Souza / Kumodot.art`;
+  $("#vCredit").innerHTML = viewer.credits === false ? "Read-only view" : `Read-only view · made with <a href="${PUBLIC_URL}" target="_blank" rel="noopener">${APP.name}</a> v${APP.version} · Marcelo Souza / Kumodot.art`;
 }
-function saveViewer() { LS.set(VIEWER_KEY, viewer); renderViewer(); }
+function saveViewer() { LS.set(VIEWER_KEY, { fmt: viewer.fmt, wrap: viewer.wrap, dec: viewer.dec }); renderViewer(); }
 function openViewer() {
   document.body.classList.add("viewing"); $("#viewer").hidden = false;
+  viewer.credits = new URLSearchParams(location.hash.slice(1)).get("c") !== "0";
+  $(".vkofi").style.display = viewer.credits ? "" : "none";
+  $("#cCredit").checked = $("#spCredit").checked = viewer.credits;   // card / PDF downloads follow the link
   renderViewer();
 }
 $("#vFmt").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (b) { viewer.fmt = b.dataset.f; saveViewer(); } });
@@ -2332,7 +2340,10 @@ function shareLink() {
   q.set("p", P.map(c => toHex(c).slice(1)).join("-"));
   if (P.some(c => c.userNamed)) q.set("n", P.map(c => c.name.replace(/\|/g, "/")).join("|"));
   if (paletteTitle()) q.set("t", paletteTitle());
-  if (!$("#sViewer") || $("#sViewer").checked) q.set("v", "1");   // read-only viewer
+  if (!$("#sViewer") || $("#sViewer").checked) {
+    q.set("v", "1");                                   // read-only viewer
+    if ($("#sCredits") && !$("#sCredits").checked) q.set("c", "0");   // no author credits
+  }
   // Hosted: the folder URL (the app is index.html). Local file (.bat) -> public site, so the link works for anyone
   const baseUrl = location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/[^/]*$/, "") : PUBLIC_URL;
   return baseUrl + "#" + q.toString();

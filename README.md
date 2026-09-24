@@ -47,7 +47,7 @@ The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color 
 2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
 3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
 
-## Features (v0.12.6)
+## Features (v0.12.7)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -72,7 +72,7 @@ One window, three categories:
 
 - **Image**: PNG card, strip or grid, optional Extras (the open Harmonies and Values sections), with or without the image (turns itself off for palettes loaded from the Library or a link), names, HEX / RGB / Linear / ACEScg labels, dark or light theme. Download or copy straight into a chat.
 - **Image → Spec sheet**: the palette as a document, one row per color with HEX, RGB, sRGB, Linear, ACEScg and HSV as real, selectable text. Download it as a PDF (vector swatches, no extra software) or a standalone HTML page where a click copies any value. Handy for client handoffs or to keep open next to your 3D app.
-- **Viewer link**: the share link opens a read-only page made for whoever gets the palette. Big swatches with every value (HEX, RGB, sRGB, Linear, ACEScg, HSV), click to copy in the format and wrap style you work with (Python, VEX, c4d.Vector, GLSL), and one-click downloads: PNG card, PDF, Cinema 4D, ASE, GPL, JSON. "Open in editor" goes to the full app. Untick "Link opens the read-only viewer" to share the editor instead.
+- **Viewer link**: the share link opens a read-only page made for whoever gets the palette. Big swatches with every value (HEX, RGB, sRGB, Linear, ACEScg, HSV), click to copy in the format and wrap style you work with (Python, VEX, c4d.Vector, GLSL), and one-click downloads: PNG card, PDF, Cinema 4D, ASE, GPL, JSON. "Open in editor" goes to the full app. Untick "Link opens the read-only viewer" to share the editor instead, or "Show my credits in the viewer" to hand it over without the author name and Ko-fi button.
 - **Text**: Markdown table (GitHub, Notion, Obsidian), Slack message, plain text, and a **link** where the palette lives in the URL (no upload). Whoever opens it can drop their own image and see it rebuilt with your palette in Blocks view.
 - **Apps**: Cinema 4D swatch script, ASE (Adobe, Affinity, Procreate import), GPL (GIMP, Krita, Inkscape), JSON, CSS.
 
