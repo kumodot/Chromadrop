@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.7
+  Chromadrop v0.12.8
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.8 (2026-09-24)
+    - Share > Text remembers "Link opens the read-only viewer" and "Show my
+      credits in the viewer" (saved in this browser), so a link without
+      credits stays that way until you tick it again.
+    - Share > Text opens on Link (first tab).
   v0.12.7 (2026-09-24)
     - Share > Text: "Show my credits in the viewer" checkbox. Off adds c=0 to
       the link: the viewer hides the Ko-fi button and the credit line, and
@@ -186,7 +191,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.7 · image palette extractor</title>
+<title>Chromadrop v0.12.8 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -543,7 +548,7 @@ body.viewing .app{display:none}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.7</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.8</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -768,7 +773,7 @@ body.viewing .app{display:none}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.7</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.8</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -966,7 +971,7 @@ body.viewing .app{display:none}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.7", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.8", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -2446,10 +2451,10 @@ if __name__ == "__main__":
 }
 const SHARE_CATS = {
   image: [{ fmt: "card", label: "PNG card" }, { fmt: "spec", label: "Spec sheet (PDF / HTML)" }],
-  text: [{ fmt: "md", label: "Markdown" }, { fmt: "slack", label: "Slack" }, { fmt: "plain", label: "Plain text" }, { fmt: "link", label: "Link" }],
+  text: [{ fmt: "link", label: "Link" }, { fmt: "md", label: "Markdown" }, { fmt: "slack", label: "Slack" }, { fmt: "plain", label: "Plain text" }],
   apps: [{ fmt: "c4d", label: "Cinema 4D" }, { fmt: "ase", label: "ASE" }, { fmt: "gpl", label: "GPL" }, { fmt: "json", label: "JSON" }, { fmt: "css", label: "CSS" }],
 };
-const lastFmt = { image: "card", text: "md", apps: "c4d" };
+const lastFmt = { image: "card", text: "link", apps: "c4d" };
 let shareCat = "image";
 const DL = { md: [".md", "text/markdown"], c4d: ["_c4d_swatches.py", "text/x-python"], ase: [".ase"], gpl: [".gpl", "text/plain"], json: [".json", "application/json"], css: [".css", "text/css"] };
 function renderShare() {
@@ -2491,6 +2496,10 @@ $("#btnShare").addEventListener("click", () => {
 $$("#shareCats button").forEach(b => b.addEventListener("click", () => { shareCat = b.dataset.cat; shareFmt = lastFmt[shareCat]; renderShare(); }));
 $("#shareTabs").addEventListener("click", e => { const b = e.target.closest("button[data-fmt]"); if (!b) return; shareFmt = lastFmt[shareCat] = b.dataset.fmt; renderShare(); });
 $$("#paneText .shareopts input").forEach(el => el.addEventListener("input", renderShare));
+// Link options are remembered per browser (settings.linkViewer / settings.linkCredits)
+$("#sViewer").checked = settings.linkViewer !== false; $("#sCredits").checked = settings.linkCredits !== false;
+$("#sViewer").addEventListener("change", e => { settings.linkViewer = e.target.checked; saveSettings(); });
+$("#sCredits").addEventListener("change", e => { settings.linkCredits = e.target.checked; saveSettings(); });
 $("#sTitle").addEventListener("input", () => { state.title = $("#sTitle").value; renderShare(); });
 $("#btnShareCopy").addEventListener("click", () => copyText($("#shareText").value, shareFmt === "link" ? "share link" : shareFmt === "c4d" ? "C4D swatch script" : `${state.palette.length} colors as ${{ md: "Markdown", slack: "Slack text", plain: "text", gpl: "GPL", json: "JSON", css: "CSS" }[shareFmt] || "text"}`));
 $$("#c4dOpts input, #c4dOpts select").forEach(el => el.addEventListener("input", renderShare));
