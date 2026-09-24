@@ -1,11 +1,28 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.4
+  Chromadrop v0.12.6
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.6 (2026-09-24)
+    - Viewer: share links can open a read-only page made for whoever gets
+      the palette (#...&v=1). Big swatches, every value per color (HEX, RGB,
+      sRGB, Linear, ACEScg, HSV); click a swatch or a value to copy it. Pick
+      what the swatch click copies, the wrap style (Python, VEX, c4d.Vector,
+      GLSL) and decimals. Copy all, PNG card, PDF, Cinema 4D, ASE, GPL, JSON.
+      "Open in editor" goes to the full app with the same palette.
+    - Share > Text: "Link opens the read-only viewer" (on by default) for the
+      Link, Markdown, Slack and plain text formats.
+  v0.12.5 (2026-09-24)
+    - Share > Image > Spec sheet: the palette as a document with selectable
+      values. Download PDF (vector swatches, real text, clickable links, no
+      library: the PDF is written by hand) or HTML (click any value to copy).
+      Pick the values (RGB, sRGB, Linear, ACEScg, HSV), theme, image, credit.
+      Decimals follow the panel's Dec setting.
+    - Fix: Ctrl+V (paste) also toggled the Value view. E / B / V shortcuts
+      now ignore Ctrl, Alt and Cmd.
   v0.12.4 (2026-09-23)
     - Each module has its own accent color: Image = amber, Video = teal.
       The header tabs are now a segmented control with a color dot per
@@ -165,7 +182,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.4 · image palette extractor</title>
+<title>Chromadrop v0.12.6 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -375,6 +392,44 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 #supportCard .sc-never{background:none;border:0;padding:0;color:var(--fg3);text-decoration:underline;font-size:11px}
 #supportCard .sc-never:hover{color:var(--fg2)}
 @media (prefers-reduced-motion:reduce){button.support.nudge,button.support.nudge .heart,#supportCard,#supportCard .sc-heart{animation:none}}
+/* ---- Viewer (read-only share link) ---- */
+body.viewing .app{display:none}
+#viewer{min-height:100%;display:flex;flex-direction:column;background:var(--bg)}
+#viewer[hidden]{display:none}
+.vhead{display:flex;align-items:center;gap:10px 18px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--bg2);flex-wrap:wrap}
+.vhead .brand{font-size:14px;color:var(--fg2)}
+.vtitle{display:flex;align-items:baseline;gap:10px;min-width:0}
+.vtitle h1{margin:0;font-size:20px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vtitle span{color:var(--fg3);font:12px var(--mono);white-space:nowrap}
+.vhead .spacer{flex:1}
+.vkofi{color:#e9c98f;text-decoration:none;font-size:12px;padding:6px 10px;border-radius:6px;background:rgba(224,163,58,.10);border:1px solid rgba(224,163,58,.32);white-space:nowrap}
+.vkofi:hover{background:rgba(224,163,58,.18);border-color:rgba(224,163,58,.6)}
+.vstrip{display:flex;height:10px}
+.vstrip i{flex:1}
+.vbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;padding:10px 20px;border-bottom:1px solid var(--line);background:var(--bg2);position:sticky;top:0;z-index:2}
+.vbar label{display:flex;align-items:center;gap:6px}
+.vgrid{flex:1;display:grid;grid-auto-rows:max-content;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;padding:20px;align-content:start}
+.vcard{background:var(--bg2);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
+.vcard.flash{box-shadow:0 0 0 2px var(--accent)}
+.vsw{height:132px;border:0;border-radius:0;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:2px;padding:10px 12px;cursor:copy;text-align:left}
+.vsw:hover{border:0;filter:brightness(1.05)}
+.vsw b{font:600 13px var(--mono);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vsw small{font-size:11px;opacity:0;transition:opacity .15s}
+.vsw:hover small{opacity:.75}
+.vname{display:flex;align-items:baseline;justify-content:space-between;gap:8px;padding:10px 12px 2px}
+.vname b{font-size:14px}
+.vname i{font:11px var(--mono);font-style:normal;color:var(--fg3)}
+.vvals{display:flex;flex-direction:column;padding:4px 6px 8px}
+.vval{display:grid;grid-template-columns:58px 1fr;gap:6px;align-items:center;background:transparent;border:1px solid transparent;border-radius:5px;padding:4px 6px;text-align:left;cursor:copy}
+.vval:hover{border-color:var(--line);background:var(--bg3)}
+.vval em{font:700 10px var(--sans);font-style:normal;letter-spacing:.4px;color:var(--fg3)}
+.vval.on em{color:var(--accent)}
+.vval code{font:12px var(--mono);color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vfoot{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--line);background:var(--bg2);position:sticky;bottom:0}
+.vfoot .spacer{flex:1}
+.vcredit{color:var(--fg3);font-size:12px}
+.vcredit a{color:var(--fg2)}
+@media (max-width:700px){.vbar,.vfoot{position:static}.vgrid{padding:14px;grid-auto-rows:max-content}.vsw{height:96px}}
 #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);opacity:0;transition:.18s;background:#000d;border:1px solid var(--line);padding:8px 14px;border-radius:20px;pointer-events:none;font:12px var(--mono);z-index:50}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
@@ -413,6 +468,8 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 .cextras{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:8px 0}
 .csub{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--fg3)}
 .cardprev{background:#0c0d0f;border-radius:8px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:300px}
+.specprev{align-items:stretch;padding:0;overflow:hidden}
+.specprev iframe{width:100%;height:68vh;border:0;display:block;background:#fff}
 .cardprev canvas{max-width:100%;max-height:68vh;height:auto;border-radius:4px}
 /* modules */
 .modtabs{display:flex;gap:4px;margin-left:12px;padding:3px;background:var(--bg);border:1px solid var(--line);border-radius:9px}
@@ -482,7 +539,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.4</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.6</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -707,7 +764,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.4</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.6</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -764,6 +821,26 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
       <div class="cardprev"><canvas id="cardCanvas"></canvas></div>
       </div>
 
+      <div class="pane cardgrid" id="paneSpec">
+      <div class="cardopts">
+        <label>Theme
+          <select id="spTheme"><option value="light">Light</option><option value="dark">Dark</option></select>
+        </label>
+        <label class="chk"><input type="checkbox" id="spImg" checked> Include image</label>
+        <div class="csub">Values</div>
+        <label class="chk"><input type="checkbox" id="spRGB" checked> RGB</label>
+        <label class="chk"><input type="checkbox" id="spSRGB" checked> sRGB 0-1</label>
+        <label class="chk"><input type="checkbox" id="spLin" checked> Linear 0-1</label>
+        <label class="chk" title="ACEScg (AP1) linear, for raw values in an ACES pipeline"><input type="checkbox" id="spAces"> ACEScg</label>
+        <label class="chk"><input type="checkbox" id="spHSV"> HSV</label>
+        <label class="chk"><input type="checkbox" id="spCredit" checked> Credit footer</label>
+        <div class="cnote">The values are real text: select and copy them in any PDF viewer or browser. Decimals follow the panel's Dec setting.</div>
+        <button id="btnSpecPdf" class="primary" title="PDF with vector swatches and selectable values">Download PDF</button>
+        <button id="btnSpecHtml" title="Standalone web page: click any value to copy it">Download HTML</button>
+      </div>
+      <div class="cardprev specprev"><iframe id="specFrame" title="Spec sheet preview"></iframe></div>
+      </div>
+
       <div class="pane" id="paneText">
         <div class="shareopts" id="c4dOpts" style="display:none">
           <label title="This scene only: swatches are saved inside the .c4d and travel with the file. All scenes: saved in your Cinema 4D preferences, available in every scene on this computer (not inside the file).">Add swatches to
@@ -779,6 +856,9 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
           <label><input type="checkbox" id="sHSV"> HSV</label>
           <label><input type="checkbox" id="sLink" checked> Include link</label>
         </div>
+        <div class="shareopts" id="linkOpts">
+          <label title="On: the link opens a read-only page made for artists (big swatches, click to copy, downloads). Off: it opens the full editor."><input type="checkbox" id="sViewer" checked> Link opens the read-only viewer</label>
+        </div>
         <textarea id="shareText" readonly spellcheck="false"></textarea>
         <div class="sharefoot">
           <span class="note" id="shareNote"></span>
@@ -788,6 +868,37 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
       </div>
     </div>
   </div>
+</div>
+
+<!-- Viewer: read-only page opened from a share link (#...&v=1) -->
+<div id="viewer" hidden>
+  <header class="vhead">
+    <div class="brand">Chroma<span class="dot">•</span>drop</div>
+    <div class="vtitle"><h1 id="vTitle"></h1><span id="vMeta"></span></div>
+    <span class="spacer"></span>
+    <a class="vkofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">♥ Support Marcelo Souza</a>
+    <button id="vEditor" title="Open this palette in the full Chromadrop editor">Open in editor</button>
+  </header>
+  <div class="vstrip" id="vStrip"></div>
+  <div class="vbar">
+    <span class="gtitle">Click copies</span>
+    <div class="seg" id="vFmt"></div>
+    <label>Style <select id="vWrap"><option value="plain">0.1, 0.2, 0.3</option><option value="py">Python (…)</option><option value="vex">VEX {…}</option><option value="c4d">c4d.Vector(…)</option><option value="glsl">GLSL vec3(…)</option></select></label>
+    <label>Dec <select id="vDec"><option>2</option><option selected>3</option><option>4</option><option>6</option></select></label>
+  </div>
+  <main class="vgrid" id="vGrid"></main>
+  <footer class="vfoot">
+    <span class="gtitle">Get the palette</span>
+    <button class="primary" id="vCopyAll" title="Copy every color in the format picked above">⧉ Copy all</button>
+    <button data-vdl="card" title="The palette card as a PNG image">PNG card</button>
+    <button data-vdl="pdf" title="Spec sheet with every value as selectable text">PDF</button>
+    <button data-vdl="c4d" title="Python script that adds the palette to Cinema 4D swatches">Cinema 4D</button>
+    <button data-vdl="ase" title="Adobe Swatch Exchange: Photoshop, Illustrator, Affinity, Procreate">ASE</button>
+    <button data-vdl="gpl" title="GIMP palette: GIMP, Krita, Inkscape, Aseprite">GPL</button>
+    <button data-vdl="json" title="Full data: HEX, RGB, sRGB, linear and ACEScg">JSON</button>
+    <span class="spacer"></span>
+    <span class="vcredit" id="vCredit"></span>
+  </footer>
 </div>
 
 <!-- Library drop: replace or merge -->
@@ -850,7 +961,7 @@ button.support.nudge .heart{animation:supBeat 2.4s ease-in-out infinite}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.4", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.6", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -1658,14 +1769,16 @@ stage.addEventListener("dragover", e => { if (dragRow || !e.dataTransfer.types.i
 stage.addEventListener("dragleave", () => stage.classList.remove("dragover"));
 stage.addEventListener("drop", e => { if (e.target.closest("#history")) return; e.preventDefault(); stage.classList.remove("dragover"); if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]); });
 window.addEventListener("paste", e => {
+  if (document.body.classList.contains("viewing")) return;
   if (activeModule && activeModule.id !== "image") return;
   const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
   if (item) loadFile(item.getAsFile());
 });
 window.addEventListener("keydown", e => {
+  if (document.body.classList.contains("viewing")) return;
   if (e.key === "Escape" && $(".modal.open") && !e.target.closest(".hcard")) { $$(".modal.open").forEach(m => m.classList.remove("open")); return; }
   if (e.target.matches("input,select,textarea")) return;
-  const inImage = !activeModule || activeModule.id === "image";
+  const inImage = (!activeModule || activeModule.id === "image") && !e.ctrlKey && !e.metaKey && !e.altKey;
   if (inImage && (e.key === "e" || e.key === "E")) extract(true);
   if (inImage && (e.key === "b" || e.key === "B")) setView(view.mode === "blocks" ? "orig" : "blocks");
   if (inImage && (e.key === "v" || e.key === "V")) setView(view.mode === "value" ? "orig" : "value");
@@ -1910,6 +2023,7 @@ function autoCardImage() {
   autoCardExtras();
   const fromImage = state.imgLoaded && state.palette.some(c => c.u != null);
   $("#cImgOn").checked = fromImage;
+  $("#spImg").checked = fromImage; $("#spImg").disabled = !state.imgLoaded;
   $("#cImgNote").textContent = !state.imgLoaded ? "No image loaded."
     : fromImage ? ""
     : `Image off: palette came from ${state.palette.some(c => c.origin === "video") ? "the Video module" : state.palette.some(c => c.origin === "history") ? "the Library" : "a link"}.`;
@@ -1935,6 +2049,279 @@ function quickCopyCard() {
 }
 $("#btnQuickCard").addEventListener("click", quickCopyCard);
 
+// ---------------- Spec sheet (PDF / HTML) ----------------
+// The palette as a document: swatches + one row of values per color, all as real text.
+const SPEC_VALS = [
+  ["spRGB", "RGB", c => `${c.r}, ${c.g}, ${c.b}`],
+  ["spSRGB", "sRGB 0-1", c => [c.r, c.g, c.b].map(v => (v / 255).toFixed(dec())).join(", ")],
+  ["spLin", "Linear 0-1", c => [c.r, c.g, c.b].map(v => S2L[v].toFixed(dec())).join(", ")],
+  ["spAces", "ACEScg", c => acescg(c).map(v => v.toFixed(dec())).join(", ")],
+  ["spHSV", "HSV", c => { const [h, s, v] = rgbToHsv(c.r, c.g, c.b); return `${Math.round(h)}°, ${Math.round(s * 100)}%, ${Math.round(v * 100)}%`; }],
+];
+$("#spAces").checked = settings.acescg;
+const specTheme = dark => dark
+  ? { bg: "#141518", card: "#23262b", fg: "#ece9e3", fg2: "#8b8f96", line: "#2c2f35" }
+  : { bg: "#ffffff", card: "#f1eee8", fg: "#1c1c1c", fg2: "#6b6a66", line: "#e4e0d8" };
+function specData() {
+  const dark = $("#spTheme").value === "dark", vals = SPEC_VALS.filter(v => $("#" + v[0]).checked);
+  let img = null;
+  if ($("#spImg").checked && state.imgLoaded && state.src) {
+    const s = state.src.canvas, k = Math.min(1, 1600 / Math.max(s.width, s.height));
+    const cv = document.createElement("canvas"); cv.width = Math.round(s.width * k); cv.height = Math.round(s.height * k);
+    const cx = cv.getContext("2d"); cx.fillStyle = specTheme(dark).bg; cx.fillRect(0, 0, cv.width, cv.height);
+    cx.drawImage(s, 0, 0, cv.width, cv.height);
+    img = { url: cv.toDataURL("image/jpeg", 0.88), w: cv.width, h: cv.height };
+  }
+  return {
+    title: (paletteTitle() || "").trim() || "Palette", dark, img, credit: $("#spCredit").checked,
+    date: new Date().toISOString().slice(0, 10), heads: vals.map(v => v[1]),
+    colors: state.palette.map((c, i) => ({ i: i + 1, name: c.name, hex: toHex(c), vals: vals.map(v => v[2](c)) })),
+  };
+}
+function buildSpecHTML(d) {
+  const th = specTheme(d.dark), n = d.colors.length;
+  const esc = s => String(s).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const strip = d.colors.map(c => `<i style="background:${c.hex}" title="${c.hex} ${esc(c.name)}"></i>`).join("");
+  const rows = d.colors.map(c => `<tr><td class="n">${c.i}</td><td><span class="sw" style="background:${c.hex}"></span></td><td class="nm">${esc(c.name)}</td><td><code>${c.hex}</code></td>${c.vals.map(v => `<td><code>${esc(v)}</code></td>`).join("")}</tr>`).join("\n");
+  return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(d.title)} · palette spec</title>
+<meta name="generator" content="${APP.name} v${APP.version}">
+<style>
+:root{--bg:${th.bg};--card:${th.card};--fg:${th.fg};--fg2:${th.fg2};--line:${th.line}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+main{max-width:1100px;margin:0 auto;padding:40px 32px}
+h1{margin:0;font-size:28px;line-height:1.2}
+.meta{color:var(--fg2);font-size:13px;margin:4px 0 24px}
+.top{display:flex;gap:14px;margin-bottom:28px;height:200px}
+.top.noimg{height:80px}
+.top img{height:100%;max-width:50%;object-fit:contain;object-position:left center;border-radius:6px}
+.strip{flex:1;display:flex;border-radius:6px;overflow:hidden;min-width:0}
+.strip i{flex:1}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;letter-spacing:.3px;color:var(--fg2);text-align:left;font-weight:700;padding:0 18px 8px 0;white-space:nowrap}
+td{padding:8px 18px 8px 0;border-top:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+td.n{color:var(--fg2);font-size:12px;width:1%}
+td.nm{font-weight:600}
+.sw{display:block;width:26px;height:26px;border-radius:5px;box-shadow:inset 0 0 0 1px rgba(128,128,128,.35)}
+code{font:13px ui-monospace,"Cascadia Mono",Consolas,Menlo,monospace;cursor:copy;padding:2px 4px;margin-left:-4px;border-radius:4px}
+code:hover{background:var(--card)}
+code.ok{background:#e0a33a;color:#1a1307}
+.hint{color:var(--fg2);font-size:12px;margin-top:12px}
+footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:32px;color:var(--fg2);font-size:12px}
+footer a{color:inherit}
+@media print{.hint{display:none}main{padding:0}}
+</style></head><body><main>
+<h1>${esc(d.title)}</h1>
+<div class="meta">${n} colors · ${d.date}</div>
+<div class="top${d.img ? "" : " noimg"}">${d.img ? `<img src="${d.img.url}" alt="">` : ""}<div class="strip">${strip}</div></div>
+<div class="tw"><table><thead><tr><th>#</th><th></th><th>Name</th><th>HEX</th>${d.heads.map(h => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>
+${rows}
+</tbody></table></div>
+<div class="hint">Click any value to copy it.</div>
+${d.credit ? `<footer><span>Made with <a href="${PUBLIC_URL}">${APP.name}</a> v${APP.version}</span><span>Marcelo Souza / Kumodot.art · @Msouza3d · <a href="https://ko-fi.com/msouza3d">Support Marcelo Souza</a></span></footer>` : ""}
+</main>
+<script>
+document.addEventListener("click", e => {
+  const c = e.target.closest("code"); if (!c) return;
+  const sel = () => { const r = document.createRange(); r.selectNodeContents(c); const s = getSelection(); s.removeAllRanges(); s.addRange(r); };
+  if (!navigator.clipboard) return sel();
+  navigator.clipboard.writeText(c.textContent).then(() => { c.classList.add("ok"); setTimeout(() => c.classList.remove("ok"), 700); }, sel);
+});
+<\/script></body></html>`;
+}
+
+// ---- PDF writer (PDF 1.4 by hand, no library) ----
+// Standard Type1 fonts (Helvetica / Courier) are built into every PDF viewer: no embedding,
+// text stays selectable. Strings use WinAnsi (Latin-1 plus a few symbols).
+const PDF_WIN = { "•": 0x95, "·": 0xB7, "°": 0xB0, "–": 0x96, "—": 0x97, "…": 0x85, "‘": 0x91, "’": 0x92, "“": 0x93, "”": 0x94, "⚠": 0x21 };
+function pdfStr(s) {
+  let o = "";
+  for (const ch of String(s)) {
+    let c = PDF_WIN[ch] ?? ch.codePointAt(0);
+    if (c > 255) c = 63;   // "?"
+    const t = String.fromCharCode(c);
+    o += t === "(" || t === ")" || t === "\\" ? "\\" + t : t;
+  }
+  return "(" + o + ")";
+}
+// Helvetica advance widths (1/1000 em) for ASCII 32-126, from the Adobe AFM
+const HELV_W = [278,278,355,556,556,889,667,191,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278,584,584,584,556,1015,667,667,722,722,667,611,778,722,278,500,667,556,833,722,778,667,778,722,667,611,722,667,944,667,667,611,278,278,278,469,556,333,556,556,500,556,556,278,556,556,222,222,500,222,833,556,556,556,556,333,500,278,556,500,722,500,500,500,334,260,334,584];
+const helvW = (s, size, bold) => [...String(s)].reduce((a, ch) => { const k = ch.charCodeAt(0) - 32; return a + (k >= 0 && k < HELV_W.length ? HELV_W[k] : 556); }, 0) * size / 1000 * (bold ? 1.07 : 1);
+const pdfBytes = s => { const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i) & 255; return u; };
+const pdfRGB = h => [1, 3, 5].map(i => +(parseInt(h.slice(i, i + 2), 16) / 255).toFixed(4)).join(" ");
+function pdfFile(pages, W, H, img, title) {
+  const objs = [], add = parts => (objs.push(parts), objs.length);
+  const cat = add(null), pagesId = add(null);
+  const font = b => add([`<< /Type /Font /Subtype /Type1 /BaseFont /${b} /Encoding /WinAnsiEncoding >>`]);
+  const F = { F1: font("Helvetica"), F2: font("Helvetica-Bold"), F3: font("Courier"), F4: font("Courier-Bold") };
+  let im = 0;
+  if (img) {
+    const bin = pdfBytes(atob(img.url.split(",")[1]));
+    im = add([`<< /Type /XObject /Subtype /Image /Width ${img.w} /Height ${img.h} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bin.length} >>\nstream\n`, bin, "\nendstream"]);
+  }
+  const res = `<< /Font << ${Object.entries(F).map(([k, v]) => `/${k} ${v} 0 R`).join(" ")} >>${im ? ` /XObject << /Im1 ${im} 0 R >>` : ""} >>`;
+  const kids = pages.map(pg => {
+    const c = add([`<< /Length ${pg.ops.length} >>\nstream\n`, pg.ops, "\nendstream"]);
+    const an = pg.links.map(l => add([`<< /Type /Annot /Subtype /Link /Rect [${l.x.toFixed(2)} ${l.y.toFixed(2)} ${(l.x + l.w).toFixed(2)} ${(l.y + l.h).toFixed(2)}] /Border [0 0 0] /A << /S /URI /URI ${pdfStr(l.url)} >> >>`]));
+    return add([`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${W} ${H}] /Resources ${res} /Contents ${c} 0 R${an.length ? ` /Annots [${an.map(a => a + " 0 R").join(" ")}]` : ""} >>`]);
+  });
+  objs[cat - 1] = [`<< /Type /Catalog /Pages ${pagesId} 0 R >>`];
+  objs[pagesId - 1] = [`<< /Type /Pages /Kids [${kids.map(k => k + " 0 R").join(" ")}] /Count ${kids.length} >>`];
+  const info = add([`<< /Title ${pdfStr(title)} /Author (Chromadrop) /Creator ${pdfStr(`${APP.name} v${APP.version} - ${PUBLIC_URL}`)} /Producer ${pdfStr(APP.name)} >>`]);
+  const chunks = []; let off = 0; const offs = [];
+  const push = x => { const b = typeof x === "string" ? pdfBytes(x) : x; chunks.push(b); off += b.length; };
+  push("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n");
+  objs.forEach((parts, i) => { offs.push(off); push(`${i + 1} 0 obj\n`); parts.forEach(push); push("\nendobj\n"); });
+  const xref = off;
+  push(`xref\n0 ${objs.length + 1}\n0000000000 65535 f \n` + offs.map(o => String(o).padStart(10, "0") + " 00000 n \n").join(""));
+  push(`trailer\n<< /Size ${objs.length + 1} /Root ${cat} 0 R /Info ${info} 0 R >>\nstartxref\n${xref}\n%%EOF\n`);
+  return new Blob(chunks, { type: "application/pdf" });
+}
+function buildSpecPDF(d) {
+  const th = specTheme(d.dark), n = d.colors.length, pad = 36;
+  // Column widths at font size fs. Courier advance = 0.6 em.
+  const mono = (strs, fs) => Math.max(...strs.map(s => s.length)) * 0.6 * fs + 16;
+  const layout = fs => {
+    const cols = [{ k: "#", w: 12 + fs }, { k: "", w: 10 + fs * 1.7 },
+      { k: "Name", w: Math.min(150, Math.max(50, ...d.colors.map(c => helvW(c.name, fs, true)))) + 14 },
+      { k: "HEX", w: mono(["#000000"], fs) }];
+    d.heads.forEach((h, j) => cols.push({ k: h, w: Math.max(mono(d.colors.map(c => c.vals[j]), fs), helvW(h, 7, true) + 16) }));
+    return { cols, total: cols.reduce((a, c) => a + c.w, 0) };
+  };
+  let fs = 9, L = layout(fs), W = 595, H = 842;                 // A4 portrait
+  if (L.total > W - 2 * pad) { W = 842; H = 595; }               // wide tables: landscape
+  while (L.total > W - 2 * pad && fs > 5.5) { fs -= 0.25; L = layout(fs); }
+  const cw = W - 2 * pad, bottom = H - pad - (d.credit ? 16 : 0);
+  const P2 = v => +v.toFixed(2);
+  const pages = []; let ops = "", links = [], y = 0;
+  const rect = (x, y0, w, h, hex) => { ops += `${pdfRGB(hex)} rg ${P2(x)} ${P2(H - y0 - h)} ${P2(w)} ${P2(h)} re f\n`; };
+  const text = (x, base, size, f, s, hex) => { ops += `BT /${f} ${P2(size)} Tf ${pdfRGB(hex)} rg ${P2(x)} ${P2(H - base)} Td ${pdfStr(s)} Tj ET\n`; };
+  const hline = y0 => { ops += `${pdfRGB(th.line)} RG 0.5 w ${pad} ${P2(H - y0)} m ${P2(pad + L.total)} ${P2(H - y0)} l S\n`; };
+  const fit = (s, maxW, size, bold) => { s = String(s); if (helvW(s, size, bold) <= maxW) return s; while (s.length > 1 && helvW(s + "…", size, bold) > maxW) s = s.slice(0, -1); return s + "…"; };
+  const footer = () => {
+    if (!d.credit) return;
+    const fy = H - pad + 10, left = `Made with ${APP.name} v${APP.version} · kumodot.github.io/Chromadrop`;
+    const right = "Marcelo Souza / Kumodot.art · @Msouza3d · Support: ko-fi.com/msouza3d", rw = helvW(right, 7.5);
+    text(pad, fy, 7.5, "F1", left, th.fg2); links.push({ x: pad, y: H - fy - 2.5, w: helvW(left, 7.5), h: 10, url: PUBLIC_URL });
+    text(W - pad - rw, fy, 7.5, "F1", right, th.fg2); links.push({ x: W - pad - rw, y: H - fy - 2.5, w: rw, h: 10, url: "https://ko-fi.com/msouza3d" });
+  };
+  const newPage = () => {
+    if (ops) pages.push({ ops, links });
+    ops = ""; links = []; y = pad;
+    if (d.dark) rect(0, 0, W, H, th.bg);
+    footer();
+  };
+  const head = () => {
+    let x = pad;
+    L.cols.forEach(c => { if (c.k) text(x, y + 7, 7, "F2", c.k, th.fg2); x += c.w; });
+    y += 12; hline(y);
+  };
+  const strip = (x, y0, w, h) => d.colors.forEach((c, i) => rect(x + i * w / n, y0, w / n + (i < n - 1 ? 0.4 : 0), h, c.hex));
+  newPage();
+  text(pad, y + 16, 18, "F2", fit(d.title, cw, 18, true), th.fg);
+  text(pad, y + 31, 8.5, "F1", `${n} colors · ${d.date}`, th.fg2);
+  y += 46;
+  if (d.img) {
+    const hb = Math.min(170, H * 0.26);
+    let iw = hb * d.img.w / d.img.h, ih = hb;
+    if (iw > cw * 0.5) { iw = cw * 0.5; ih = iw * d.img.h / d.img.w; }
+    ops += `q ${P2(iw)} 0 0 ${P2(ih)} ${P2(pad)} ${P2(H - y - ih)} cm /Im1 Do Q\n`;
+    strip(pad + iw + 10, y, cw - iw - 10, ih);
+    y += ih + 26;
+  } else { strip(pad, y, cw, 56); y += 56 + 26; }
+  const rowH = Math.max(17, fs * 2.4), sw = fs * 1.6;
+  head();
+  d.colors.forEach(c => {
+    if (y + rowH > bottom) { newPage(); head(); }
+    let x = pad; const base = y + rowH / 2 + fs * 0.35;
+    text(x, base, fs * 0.85, "F1", String(c.i), th.fg2); x += L.cols[0].w;
+    ops += `${pdfRGB(c.hex)} rg ${pdfRGB(th.line)} RG 0.5 w ${P2(x)} ${P2(H - y - (rowH + sw) / 2)} ${P2(sw)} ${P2(sw)} re B\n`; x += L.cols[1].w;
+    text(x, base, fs, "F2", fit(c.name, L.cols[2].w - 12, fs, true), th.fg); x += L.cols[2].w;
+    text(x, base, fs, "F4", c.hex, th.fg); x += L.cols[3].w;
+    c.vals.forEach((v, j) => { text(x, base, fs, "F3", v, th.fg); x += L.cols[4 + j].w; });
+    y += rowH; hline(y);
+  });
+  pages.push({ ops, links });
+  return pdfFile(pages, W, H, d.img, d.title);
+}
+function renderSpec() {
+  if (!state.palette.length) return;
+  $("#specFrame").srcdoc = buildSpecHTML(specData());
+}
+$$("#paneSpec input, #paneSpec select").forEach(el => el.addEventListener("input", renderSpec));
+$("#btnSpecPdf").addEventListener("click", () => { if (need()) download(buildSpecPDF(specData()), base() + "_spec.pdf"); });
+$("#btnSpecHtml").addEventListener("click", () => { if (need()) download(new Blob([buildSpecHTML(specData())], { type: "text/html" }), base() + "_spec.html"); });
+
+// ---------------- Viewer (read-only share link) ----------------
+// Opened by #p=...&v=1. Same palette state as the editor, but a page made for whoever
+// receives it: nothing to edit, click to copy, download the ready-made formats.
+const VIEWER_KEY = "chromadrop.viewer.v1";
+const viewer = Object.assign({ fmt: "hex", wrap: "plain", dec: "3" }, LS.get(VIEWER_KEY, {}));
+const V_FMTS = [["hex", "HEX"], ["rgb", "RGB"], ["srgb", "sRGB"], ["lin", "Linear"], ["aces", "ACEScg"], ["hsv", "HSV"]];
+function vValues(c) {
+  const d = +viewer.dec, w = viewer.wrap, f = a => a.map(v => v.toFixed(d));
+  const wr = a => { const s = a.join(", "); return ({ py: `(${s})`, vex: `{${s}}`, c4d: `c4d.Vector(${s})`, glsl: `vec3(${s})` })[w] || s; };
+  const [h, s, v] = rgbToHsv(c.r, c.g, c.b), hsv = [Math.round(h), Math.round(s * 100), Math.round(v * 100)];
+  const same = x => ({ show: x, copy: x });
+  return {
+    hex: same(toHex(c)), rgb: same(wr([c.r, c.g, c.b])),
+    srgb: same(wr(f([c.r / 255, c.g / 255, c.b / 255]))), lin: same(wr(f([S2L[c.r], S2L[c.g], S2L[c.b]]))),
+    aces: same(wr(f(acescg(c)))), hsv: { show: `${hsv[0]}°, ${hsv[1]}%, ${hsv[2]}%`, copy: hsv.join(", ") },
+  };
+}
+function renderViewer() {
+  const P = state.palette, t = paletteTitle() || "Palette";
+  $("#vTitle").textContent = t; $("#vMeta").textContent = `${P.length} colors`;
+  document.title = `${t} · ${APP.name}`;
+  $("#vWrap").value = viewer.wrap; $("#vDec").value = viewer.dec;
+  $("#vStrip").innerHTML = P.map(c => `<i style="background:${toHex(c)}"></i>`).join("");
+  $("#vFmt").innerHTML = V_FMTS.map(([k, l]) => `<button data-f="${k}" class="${k === viewer.fmt ? "on" : ""}">${l}</button>`).join("");
+  $("#vGrid").innerHTML = P.map((c, i) => {
+    const V = vValues(c);
+    return `<div class="vcard" data-card="${i}">
+      <button class="vsw" data-i="${i}" data-k="${viewer.fmt}" style="background:${toHex(c)};color:${inkFor(c)}" title="Click to copy ${V_FMTS.find(x => x[0] === viewer.fmt)[1]}"><b>${esc(V[viewer.fmt].show)}</b><small>Click to copy</small></button>
+      <div class="vname"><b>${esc(c.name)}</b><i>${i + 1}</i></div>
+      <div class="vvals">${V_FMTS.map(([k, l]) => `<button class="vval${k === viewer.fmt ? " on" : ""}" data-i="${i}" data-k="${k}" title="Click to copy"><em>${l}</em><code>${esc(V[k].show)}</code></button>`).join("")}</div>
+    </div>`;
+  }).join("");
+  $("#vCredit").innerHTML = `Read-only view · made with <a href="${PUBLIC_URL}" target="_blank" rel="noopener">${APP.name}</a> v${APP.version} · Marcelo Souza / Kumodot.art`;
+}
+function saveViewer() { LS.set(VIEWER_KEY, viewer); renderViewer(); }
+function openViewer() {
+  document.body.classList.add("viewing"); $("#viewer").hidden = false;
+  renderViewer();
+}
+$("#vFmt").addEventListener("click", e => { const b = e.target.closest("[data-f]"); if (b) { viewer.fmt = b.dataset.f; saveViewer(); } });
+$("#vWrap").addEventListener("input", e => { viewer.wrap = e.target.value; saveViewer(); });
+$("#vDec").addEventListener("input", e => { viewer.dec = e.target.value; saveViewer(); });
+$("#vGrid").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]"); if (!b) return;
+  const i = +b.dataset.i, c = state.palette[i], k = b.dataset.k;
+  copyText(vValues(c)[k].copy, `${c.name} ${V_FMTS.find(x => x[0] === k)[1]}`);
+  const card = $(`[data-card="${i}"]`); card.classList.add("flash"); setTimeout(() => card.classList.remove("flash"), 500);
+});
+$("#vCopyAll").addEventListener("click", () => {
+  const P = state.palette, l = V_FMTS.find(x => x[0] === viewer.fmt)[1];
+  copyText(P.map(c => vValues(c)[viewer.fmt].copy).join("\n"), `${P.length} colors (${l})`);
+});
+$("#viewer .vfoot").addEventListener("click", e => {
+  const b = e.target.closest("[data-vdl]"); if (!b || !need()) return;
+  const k = b.dataset.vdl;
+  if (k === "card") { autoCardImage(); renderCard(); $("#cardCanvas").toBlob(bl => download(bl, base() + "_card.png"), "image/png"); }
+  else if (k === "pdf") download(buildSpecPDF(specData()), base() + "_spec.pdf");
+  else if (k === "c4d") { download(new Blob([buildC4D()], { type: "text/x-python" }), base() + "_c4d_swatches.py"); toast("Cinema 4D: Extensions > Script Manager, open the script, Execute"); }
+  else if (k === "ase") download(buildASE(), base() + ".ase");
+  else if (k === "gpl") download(new Blob([buildGPL()], { type: "text/plain" }), base() + ".gpl");
+  else if (k === "json") download(new Blob([buildText("json")], { type: "application/json" }), base() + ".json");
+});
+$("#vEditor").addEventListener("click", () => {
+  const q = new URLSearchParams(location.hash.slice(1)); q.delete("v");
+  location.hash = q.toString(); location.reload();
+});
+
 // ---------------- Share (Markdown / Slack / plain / link) ----------------
 const paletteTitle = () => state.title != null ? state.title : state.imgName;
 let shareFmt = "card";
@@ -1945,6 +2332,7 @@ function shareLink() {
   q.set("p", P.map(c => toHex(c).slice(1)).join("-"));
   if (P.some(c => c.userNamed)) q.set("n", P.map(c => c.name.replace(/\|/g, "/")).join("|"));
   if (paletteTitle()) q.set("t", paletteTitle());
+  if (!$("#sViewer") || $("#sViewer").checked) q.set("v", "1");   // read-only viewer
   // Hosted: the folder URL (the app is index.html). Local file (.bat) -> public site, so the link works for anyone
   const baseUrl = location.protocol.startsWith("http") ? location.origin + location.pathname.replace(/[^/]*$/, "") : PUBLIC_URL;
   return baseUrl + "#" + q.toString();
@@ -2046,7 +2434,7 @@ if __name__ == "__main__":
 `;
 }
 const SHARE_CATS = {
-  image: [{ fmt: "card", label: "PNG card" }],
+  image: [{ fmt: "card", label: "PNG card" }, { fmt: "spec", label: "Spec sheet (PDF / HTML)" }],
   text: [{ fmt: "md", label: "Markdown" }, { fmt: "slack", label: "Slack" }, { fmt: "plain", label: "Plain text" }, { fmt: "link", label: "Link" }],
   apps: [{ fmt: "c4d", label: "Cinema 4D" }, { fmt: "ase", label: "ASE" }, { fmt: "gpl", label: "GPL" }, { fmt: "json", label: "JSON" }, { fmt: "css", label: "CSS" }],
 };
@@ -2057,20 +2445,23 @@ function renderShare() {
   $$("#shareCats button").forEach(b => b.classList.toggle("on", b.dataset.cat === shareCat));
   const subs = SHARE_CATS[shareCat];
   $("#shareTabs").innerHTML = subs.length > 1 ? subs.map(t => `<button data-fmt="${t.fmt}" class="${t.fmt === shareFmt ? "on" : ""}">${t.label}</button>`).join("") : "";
-  const isCard = shareFmt === "card";
-  $("#paneCard").classList.toggle("on", isCard); $("#paneText").classList.toggle("on", !isCard);
+  const isCard = shareFmt === "card", isSpec = shareFmt === "spec";
+  $("#paneCard").classList.toggle("on", isCard); $("#paneSpec").classList.toggle("on", isSpec);
+  $("#paneText").classList.toggle("on", !isCard && !isSpec);
   if (isCard) { renderCard(); return; }
+  if (isSpec) { renderSpec(); return; }
   $("#shareText").value = buildShare(shareFmt);
   const isC4D = shareFmt === "c4d";
   $("#c4dOpts").style.display = isC4D ? "" : "none";
   $("#textOpts").style.display = ["md", "slack", "plain"].includes(shareFmt) ? "" : "none";
+  $("#linkOpts").style.display = ["md", "slack", "plain", "link"].includes(shareFmt) ? "" : "none";
   const dl = DL[shareFmt];
   $("#btnShareDl").style.display = dl ? "" : "none";
   if (dl) $("#btnShareDl").textContent = `Download ${dl[0].replace(/^_c4d_swatches/, "")}`;
   $("#btnShareCopy").style.display = shareFmt === "ase" ? "none" : "";
   $("#shareNote").textContent =
     isC4D ? "Cinema 4D: Extensions > Script Manager, paste, Execute. Adds a swatch group named after the palette. Running it twice adds a second group."
-    : shareFmt === "link" ? "Anyone opening this link sees the palette in Chromadrop. The colors live in the link itself, no image is uploaded."
+    : shareFmt === "link" ? ($("#sViewer").checked ? "Opens a read-only viewer: big swatches, click any value to copy it, downloads for C4D, ASE, PDF... \"Open in editor\" takes them to the full app. The colors live in the link itself, nothing is uploaded." : "Anyone opening this link sees the palette in the Chromadrop editor. The colors live in the link itself, no image is uploaded.")
     : shareFmt === "slack" ? "Paste straight into a Slack message. Add a visual with Image → Copy image."
     : shareFmt === "md" ? "Notion, GitHub, Obsidian (tables render there). Not for email: use the PNG card or plain text."
     : shareFmt === "ase" ? "Adobe Swatch Exchange: Photoshop, Illustrator, InDesign, Affinity, Procreate import."
@@ -2962,6 +3353,9 @@ $("#verBadge").textContent = `v${APP.version}`;
 document.title = `${APP.name} v${APP.version}`;
 setModule(settings.lastModule || "image");
 loadFromHash();
+if (new URLSearchParams(location.hash.slice(1)).get("v") === "1" && state.palette.length) openViewer();
+// A palette link opened in a tab that already has the app (only the #hash changes): load it for real
+window.addEventListener("hashchange", () => { if (new URLSearchParams(location.hash.slice(1)).get("p")) location.reload(); });
 </script>
 </body>
 </html>
