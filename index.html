@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.10
+  Chromadrop v0.12.11
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.11 (2026-09-26)
+    - Palette names are limited to 20 characters (was 48).
   v0.12.10 (2026-09-25)
     - Names are whitelisted: only letters (any language), numbers, spaces and
       - _ . , & # + are kept. Quotes, brackets and other symbols are dropped, so
@@ -212,7 +214,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.10 · image palette extractor</title>
+<title>Chromadrop v0.12.11 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -569,7 +571,7 @@ body.viewing .app{display:none}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.10</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.11</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -794,7 +796,7 @@ body.viewing .app{display:none}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.10</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.11</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -816,7 +818,7 @@ body.viewing .app{display:none}
           <button data-cat="apps">Apps</button>
         </div>
         <span class="spacer"></span>
-        <label>Palette name <input type="text" id="sTitle" maxlength="48" style="width:220px"></label>
+        <label>Palette name <input type="text" id="sTitle" maxlength="20" style="width:220px"></label>
       </div>
       <div class="tabs subtabs" id="shareTabs"></div>
 
@@ -992,7 +994,7 @@ body.viewing .app{display:none}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.10", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.11", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -1003,7 +1005,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 // Palette and color names can come from a share link or an imported file, so anyone can write them.
 // cleanText keeps them one short line of letters, numbers, spaces and - _ . , & # + (everything else is dropped).
 const NAME_OK = /^[\p{L}\p{N} _\-.,&#+]*$/u;   // the only characters a name may contain
-const TITLE_MAX = 48, NAME_MAX = 32;             // palette name / color name length limits
+const TITLE_MAX = 20, NAME_MAX = 32;             // palette name / color name length limits
 const cleanText = (s, max = 80) => String(s ?? "").normalize("NFC").replace(/[^\p{L}\p{N} _\-.,&#+]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, max);
 // Text placed in a Python comment or docstring: one line, no quotes or backslashes, so it can never become code
 const pyText = s => cleanText(s, TITLE_MAX).replace(/["'\\]/g, "");
