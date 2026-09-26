@@ -47,7 +47,7 @@ The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color 
 2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
 3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
 
-## Features (v0.12.9)
+## Features (v0.12.10)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -79,7 +79,7 @@ One window, three categories:
 ## Security
 
 - Everything runs in your browser. Images are never uploaded; a share link only carries colors and names.
-- Names from links or imported files are cleaned to one short line (no line breaks or control characters).
+- Names from links or imported files are cleaned to one short line of letters, numbers, spaces and - _ . , & # + (everything else is dropped).
 - Generated Python (Cinema 4D script, Copy all as Python) is built from a fixed template: names only appear inside escaped strings, and the result is checked line by line against the template. Anything unexpected is blocked.
 - Share the link, not the script: whoever gets the link generates the script themselves in Chromadrop. Only run scripts from palettes you trust.
 

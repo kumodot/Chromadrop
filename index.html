@@ -1,11 +1,17 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.9
+  Chromadrop v0.12.10
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.10 (2026-09-25)
+    - Names are whitelisted: only letters (any language), numbers, spaces and
+      - _ . , & # + are kept. Quotes, brackets and other symbols are dropped, so
+      odd text never even shows up inside the generated scripts. The template
+      check also rejects any name string outside that set.
+    - Length limits: palette name 48 characters, color names 32.
   v0.12.9 (2026-09-25)
     - Security: palette and color names are text anyone can put in a link or
       an imported file. They could break out of a comment or docstring in the
@@ -206,7 +212,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.9 · image palette extractor</title>
+<title>Chromadrop v0.12.10 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -563,7 +569,7 @@ body.viewing .app{display:none}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.9</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.10</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -788,7 +794,7 @@ body.viewing .app{display:none}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.9</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.10</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -810,7 +816,7 @@ body.viewing .app{display:none}
           <button data-cat="apps">Apps</button>
         </div>
         <span class="spacer"></span>
-        <label>Palette name <input type="text" id="sTitle" style="width:220px"></label>
+        <label>Palette name <input type="text" id="sTitle" maxlength="48" style="width:220px"></label>
       </div>
       <div class="tabs subtabs" id="shareTabs"></div>
 
@@ -986,7 +992,7 @@ body.viewing .app{display:none}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.9", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.10", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
@@ -995,10 +1001,12 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 // ---------------- Text safety ----------------
 // Palette and color names can come from a share link or an imported file, so anyone can write them.
-// cleanText keeps them one short line: no line breaks or control characters.
-const cleanText = (s, max = 80) => String(s ?? "").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+// cleanText keeps them one short line of letters, numbers, spaces and - _ . , & # + (everything else is dropped).
+const NAME_OK = /^[\p{L}\p{N} _\-.,&#+]*$/u;   // the only characters a name may contain
+const TITLE_MAX = 48, NAME_MAX = 32;             // palette name / color name length limits
+const cleanText = (s, max = 80) => String(s ?? "").normalize("NFC").replace(/[^\p{L}\p{N} _\-.,&#+]+/gu, " ").replace(/\s+/g, " ").trim().slice(0, max);
 // Text placed in a Python comment or docstring: one line, no quotes or backslashes, so it can never become code
-const pyText = s => cleanText(s, 120).replace(/["'\\]/g, "");
+const pyText = s => cleanText(s, TITLE_MAX).replace(/["'\\]/g, "");
 
 // ---------------- State ----------------
 const state = {
@@ -1601,7 +1609,7 @@ $("#list").addEventListener("click", e => {
 $("#list").addEventListener("input", e => {
   if (!e.target.matches("input.name")) return;
   const c = byId(e.target.closest(".row").dataset.id);
-  c.name = cleanText(e.target.value, 40); c.userNamed = c.name !== "";
+  c.name = cleanText(e.target.value, NAME_MAX); c.userNamed = c.name !== "";
 
 });
 // Empty name field -> get an auto name back
@@ -1865,8 +1873,8 @@ function download(blob, name) {
 }
 const base = () => `${slug(state.imgName)}_palette`;
 function buildGPL() {
-  return `GIMP Palette\nName: ${cleanText(paletteTitle() || state.imgName, 80)}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
-    state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${cleanText(c.name, 40)} ${toHex(c)}`).join("\n") + "\n";
+  return `GIMP Palette\nName: ${cleanText(paletteTitle() || state.imgName, TITLE_MAX)}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
+    state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${cleanText(c.name, NAME_MAX)} ${toHex(c)}`).join("\n") + "\n";
 }
 function buildASE() {
   // Adobe Swatch Exchange v1.0, big-endian
@@ -2471,14 +2479,14 @@ if __name__ == "__main__":
 const PY_TPL = "palette = [\n{{ROW*}}\n]\nnames = {{NAMES}}";
 const PY_ACES_TPL = "# ACEScg (AP1 linear)\n" + PY_TPL;
 const PY_BLOCKED = "# Chromadrop blocked this script: the palette has unexpected text.\n# Nothing here runs. Rename the palette or its colors and try again.";
-const jsonStrOk = x => typeof x === "string" && !/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(x);
+const jsonStrOk = x => typeof x === "string" && NAME_OK.test(x);
 const PY_RULES = {
   COUNT: v => /^\d{1,4}$/.test(v),
   VERSION: v => /^\d+\.\d+\.\d+$/.test(v),
   BOOL: v => v === "True" || v === "False",
   ROW: v => /^    \(-?\d+\.\d+, -?\d+\.\d+, -?\d+\.\d+\),  # #[0-9A-F]{6}$/.test(v),
-  GROUP: v => { try { const x = JSON.parse(v); return jsonStrOk(x) && JSON.stringify(x) === v; } catch { return false; } },
-  NAMES: v => { try { const x = JSON.parse(v); return Array.isArray(x) && x.every(jsonStrOk) && JSON.stringify(x) === v; } catch { return false; } },
+  GROUP: v => { try { const x = JSON.parse(v); return jsonStrOk(x) && x.length <= TITLE_MAX && JSON.stringify(x) === v; } catch { return false; } },
+  NAMES: v => { try { const x = JSON.parse(v); return Array.isArray(x) && x.every(n => jsonStrOk(n) && n.length <= NAME_MAX) && JSON.stringify(x) === v; } catch { return false; } },
 };
 // Fill {{TOKENS}} with a function replacer (no "$&" surprises from user text)
 const fillTpl = (tpl, vals) => tpl.replace(/\{\{(\w+)\*?\}\}/g, (_, k) => vals[k]);
@@ -2504,12 +2512,12 @@ function guardPy(code, tpl) {
   return PY_BLOCKED;
 }
 const pyRow = (vals, c) => `    (${vals.join(", ")}),  # ${toHex(c)}`;
-const pyNames = P => JSON.stringify(P.map(c => cleanText(c.name, 40)));
+const pyNames = P => JSON.stringify(P.map(c => cleanText(c.name, NAME_MAX)));
 function buildPyList(P, f, aces) {
   return guardPy(fillTpl(aces ? PY_ACES_TPL : PY_TPL, { ROW: P.map(c => pyRow(f(c), c)).join("\n"), NAMES: pyNames(P) }), aces ? PY_ACES_TPL : PY_TPL);
 }
 function buildC4D() {
-  const P = state.palette, title = cleanText(paletteTitle(), 80) || "Chromadrop palette";
+  const P = state.palette, title = cleanText(paletteTitle(), TITLE_MAX) || "Chromadrop palette";
   const glob = $("#c4dCat").value === "global", names = $("#c4dNames").checked;
   const py = v => (v / 255).toFixed(6);
   const code = fillTpl(C4D_TPL, {
@@ -2588,10 +2596,10 @@ function loadFromHash() {
   const cols = p.split("-").filter(h => /^[0-9a-f]{6}$/i.test(h));
   if (!cols.length) return;
   state.palette = cols.map((h, i) => ({
-    id: state.nextId++, source: "pin", name: cleanText(names[i], 40), userNamed: !!cleanText(names[i], 40), u: null, v: null,
+    id: state.nextId++, source: "pin", name: cleanText(names[i], NAME_MAX), userNamed: !!cleanText(names[i], NAME_MAX), u: null, v: null,
     r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16),
   }));
-  const t = cleanText(q.get("t"), 80);
+  const t = cleanText(q.get("t"), TITLE_MAX);
   if (t) { state.title = t; state.imgName = t; }
   render();
   $("#drop").innerHTML = `<b>Shared palette: ${cols.length} colors</b><span>Drop an image to see it in Blocks view with this palette</span>`;
@@ -3304,9 +3312,9 @@ function newLibColors(p) {
 }
 function loadLibEntry(p, append) {
   const src = append ? newLibColors(p) : p.colors;
-  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: p.origin || "history", ...hexToRgb(c.hex), name: cleanText(c.name, 40), userNamed: !!cleanText(c.name, 40), u: null, v: null }));
+  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: p.origin || "history", ...hexToRgb(c.hex), name: cleanText(c.name, NAME_MAX), userNamed: !!cleanText(c.name, NAME_MAX), u: null, v: null }));
   state.palette = append ? [...state.palette, ...cols] : cols;
-  if (!append) { state.title = cleanText(p.name, 80); state.selId = null; }
+  if (!append) { state.title = cleanText(p.name, TITLE_MAX); state.selId = null; }
   render();
   const skipped = p.colors.length - cols.length;
   toast(append ? `Merged ${cols.length} color${cols.length === 1 ? "" : "s"} from "${p.name}"` + (skipped ? ` (${skipped} already there)` : "") : `Loaded "${p.name}"`);
@@ -3416,9 +3424,9 @@ function importLibFile(file) {
     const okHex = h => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
     const clean = p => ({
       id: typeof p.id === "string" ? p.id : newLibId(),
-      name: cleanText(p.name || "Imported", 120) || "Imported",
+      name: cleanText(p.name || "Imported", TITLE_MAX) || "Imported",
       created: Number.isFinite(p.created) ? p.created : Date.now(),
-      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: cleanText(c.name, 60), w: Number.isFinite(c.w) ? c.w : null })),
+      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: cleanText(c.name, NAME_MAX), w: Number.isFinite(c.w) ? c.w : null })),
     });
     let incoming = [];
     if (data && (data.type === "chromadrop-library" || data.type === "chromadrop-history") && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
