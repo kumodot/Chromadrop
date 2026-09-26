@@ -47,7 +47,7 @@ The **Video** tab turns a clip (or a folder of frames) into a Pixar-style color 
 2. Pick how many frames to sample and switch between **Contact sheet** and **Color script** (palette bands, barcode or average).
 3. **Copy image** or **Download PNG**. Click any frame to open it at full resolution in the Image module, or send the sequence palette to the panel.
 
-## Features (v0.12.8)
+## Features (v0.12.9)
 
 - **Cinema 4D swatches**: generates a script that adds your palette to C4D's Color Chooser, Document or Global.
 - **Library**: your palette library in a drawer over the image (`L`). Drag **Save** onto it, name it, then load, add, rename, delete and reorder. Sort by name, date or color. Only colors and names are stored (in your browser), never the image. Export / import as `.json`.
@@ -75,6 +75,13 @@ One window, three categories:
 - **Viewer link**: the share link opens a read-only page made for whoever gets the palette. Big swatches with every value (HEX, RGB, sRGB, Linear, ACEScg, HSV), click to copy in the format and wrap style you work with (Python, VEX, c4d.Vector, GLSL), and one-click downloads: PNG card, PDF, Cinema 4D, ASE, GPL, JSON. "Open in editor" goes to the full app. Untick "Link opens the read-only viewer" to share the editor instead, or "Show my credits in the viewer" to hand it over without the author name and Ko-fi button.
 - **Text**: Markdown table (GitHub, Notion, Obsidian), Slack message, plain text, and a **link** where the palette lives in the URL (no upload). Whoever opens it can drop their own image and see it rebuilt with your palette in Blocks view.
 - **Apps**: Cinema 4D swatch script, ASE (Adobe, Affinity, Procreate import), GPL (GIMP, Krita, Inkscape), JSON, CSS.
+
+## Security
+
+- Everything runs in your browser. Images are never uploaded; a share link only carries colors and names.
+- Names from links or imported files are cleaned to one short line (no line breaks or control characters).
+- Generated Python (Cinema 4D script, Copy all as Python) is built from a fixed template: names only appear inside escaped strings, and the result is checked line by line against the template. Anything unexpected is blocked.
+- Share the link, not the script: whoever gets the link generates the script themselves in Chromadrop. Only run scripts from palettes you trust.
 
 ## Run
 

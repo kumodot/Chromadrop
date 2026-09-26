@@ -1,11 +1,26 @@
 <!DOCTYPE html>
 <!--
-  Chromadrop v0.12.8
+  Chromadrop v0.12.9
   Image palette extractor for 3D artists.
   Marcelo Souza / Kumodot.art - 2026 // @Msouza3d
   Support: https://ko-fi.com/msouza3d
 
   CHANGELOG
+  v0.12.9 (2026-09-25)
+    - Security: palette and color names are text anyone can put in a link or
+      an imported file. They could break out of a comment or docstring in the
+      generated Python (Cinema 4D script, Copy all as Python) and run code in
+      the artist's app. Now every name coming from a link, the Library or an
+      import is cleaned to one short line (no line breaks or control
+      characters), and the Python exports strip quotes and backslashes from
+      names in comments/docstrings. The group name stays a JSON-escaped string.
+      Thanks to the IT team that reported it.
+    - Security, second layer: the Cinema 4D script and the Python "Copy all"
+      formats are built from a fixed template and checked line by line
+      against it. Color names moved out of # comments into a names list of
+      escaped strings. If the result ever differs from the template, the app
+      gives a harmless comment-only text instead of the script.
+    - Cinema 4D note: "Share the link, not the script".
   v0.12.8 (2026-09-24)
     - Share > Text remembers "Link opens the read-only viewer" and "Show my
       credits in the viewer" (saved in this browser), so a link without
@@ -191,7 +206,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chromadrop v0.12.8 · image palette extractor</title>
+<title>Chromadrop v0.12.9 · image palette extractor</title>
 <meta name="description" content="Pull color palettes from any image. Auto-detect or pin colors, then copy HEX, RGB, sRGB and linear values straight into Houdini, C4D, Blender. Share as PNG card, Markdown, Slack or link.">
 <meta name="theme-color" content="#141518">
 <meta property="og:type" content="website">
@@ -548,7 +563,7 @@ body.viewing .app{display:none}
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.8</span></div>
+    <div class="brand">Chroma<span class="dot">•</span>drop<span class="ver" id="verBadge">v0.12.9</span></div>
     <nav class="modtabs" id="modTabs"></nav>
     <div class="spacer"></div>
     <button id="btnOpen" class="primary">Open image</button>
@@ -773,7 +788,7 @@ body.viewing .app{display:none}
     <header><h3>About</h3><button class="ghost" data-close>✕</button></header>
     <div class="body">
       <div class="big">Chroma<span style="color:var(--brand)">•</span>drop</div>
-      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.8</div>
+      <div style="font:12px var(--mono);color:var(--brand)" id="aboutVer">v0.12.9</div>
       <p>Extract palettes from images. Auto-detect dominant colors or pin them by hand, then copy values straight into Houdini, C4D, Blender or any color field. Everything runs locally: images are never uploaded, and your Library lives in this browser.</p>
       <div class="credit" id="creditLine"></div>
       <p>Enjoying it? <br><a class="kofi" href="https://ko-fi.com/msouza3d" target="_blank" rel="noopener">Support Marcelo Souza</a></p>
@@ -855,7 +870,7 @@ body.viewing .app{display:none}
           <label title="This scene only: swatches are saved inside the .c4d and travel with the file. All scenes: saved in your Cinema 4D preferences, available in every scene on this computer (not inside the file).">Add swatches to
             <select id="c4dCat"><option value="doc">This scene only (saved in the .c4d)</option><option value="global">All scenes on this computer</option></select>
           </label>
-          <label><input type="checkbox" id="c4dNames" checked> Color names as comments</label>
+          <label><input type="checkbox" id="c4dNames" checked> Include color names</label>
         </div>
         <div class="shareopts" id="textOpts">
           <label><input type="checkbox" id="sRGB" checked> RGB</label>
@@ -971,12 +986,19 @@ body.viewing .app{display:none}
 // ============================================================
 // Chromadrop
 // ============================================================
-const APP = { name: "Chromadrop", version: "0.12.8", year: 2026 };
+const APP = { name: "Chromadrop", version: "0.12.9", year: 2026 };
 const CREDIT = `Marcelo Souza / Kumodot.art - ${APP.year} // @Msouza3d`;
 console.log(`${APP.name} v${APP.version} loaded`);
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+// ---------------- Text safety ----------------
+// Palette and color names can come from a share link or an imported file, so anyone can write them.
+// cleanText keeps them one short line: no line breaks or control characters.
+const cleanText = (s, max = 80) => String(s ?? "").replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, " ").replace(/\s+/g, " ").trim().slice(0, max);
+// Text placed in a Python comment or docstring: one line, no quotes or backslashes, so it can never become code
+const pyText = s => cleanText(s, 120).replace(/["'\\]/g, "");
 
 // ---------------- State ----------------
 const state = {
@@ -1579,7 +1601,7 @@ $("#list").addEventListener("click", e => {
 $("#list").addEventListener("input", e => {
   if (!e.target.matches("input.name")) return;
   const c = byId(e.target.closest(".row").dataset.id);
-  c.name = e.target.value.trim(); c.userNamed = c.name !== "";
+  c.name = cleanText(e.target.value, 40); c.userNamed = c.name !== "";
 
 });
 // Empty name field -> get an auto name back
@@ -1812,9 +1834,9 @@ function buildText(fmt) {
     case "srgb": return P.map(c => values(c).srgb.copy).join("\n");
     case "lin":  return P.map(c => values(c).lin.copy).join("\n");
     case "aces": return P.map(c => values(c).aces.copy).join("\n");
-    case "pyAces": return "# ACEScg (AP1 linear)\npalette = [\n" + P.map(c => `    (${aces(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
+    case "pyAces": return buildPyList(P, aces, true);
     case "vexAces": return `// ACEScg (AP1 linear)\nvector palette[] = array(\n` + P.map(c => `    set(${aces(c).join(", ")})`).join(",\n") + "\n);";
-    case "pyLin": return "palette = [\n" + P.map(c => `    (${lin(c).join(", ")}),  # ${toHex(c)} ${c.name}`).join("\n") + "\n]";
+    case "pyLin": return buildPyList(P, lin, false);
     case "vexLin": return `vector palette[] = array(\n` + P.map(c => `    set(${lin(c).join(", ")})`).join(",\n") + "\n);";
     case "css":  return ":root {\n" + P.map(c => `  --${slug(c.name)}: ${toHex(c)};`).join("\n") + "\n}";
     case "json": return JSON.stringify({
@@ -1843,8 +1865,8 @@ function download(blob, name) {
 }
 const base = () => `${slug(state.imgName)}_palette`;
 function buildGPL() {
-  return `GIMP Palette\nName: ${paletteTitle() || state.imgName}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
-    state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${c.name} ${toHex(c)}`).join("\n") + "\n";
+  return `GIMP Palette\nName: ${cleanText(paletteTitle() || state.imgName, 80)}\nColumns: ${Math.min(8, state.palette.length)}\n#\n` +
+    state.palette.map(c => `${String(c.r).padStart(3)} ${String(c.g).padStart(3)} ${String(c.b).padStart(3)}\t${cleanText(c.name, 40)} ${toHex(c)}`).join("\n") + "\n";
 }
 function buildASE() {
   // Adobe Swatch Exchange v1.0, big-endian
@@ -2397,31 +2419,29 @@ ${paletteTitle() || "Palette"} · ${P.length} colors
   return [`${title} (${P.length} colors)`, "", ...P.map((c, i) => `${i + 1}. ${c.name}  ${toHex(c)}  ${shareCols(c).map(v => `${v[0]} ${v[1]}`).join("  ")}`), "", link || credit].join("\n");
 }
 // Cinema 4D swatch script. Verified on C4D 2025.3: AddColor wants c4d.Vector4d, sRGB 0-1.
-function buildC4D() {
-  const P = state.palette, title = (paletteTitle() || "Chromadrop palette").trim();
-  const glob = $("#c4dCat").value === "global", names = $("#c4dNames").checked;
-  const py = v => (v / 255).toFixed(6);
-  const rows = P.map(c => `    (${py(c.r)}, ${py(c.g)}, ${py(c.b)}),` + (names ? `  # ${c.name} ${toHex(c)}` : ""));
-  return `"""
-Chromadrop -> Cinema 4D swatches
-Palette: ${title} (${P.length} colors)
-Generated by ${APP.name} v${APP.version} - https://kumodot.github.io/Chromadrop/
+// ---- Python exports: fixed templates + line-by-line check (security) ----
+// User text (palette / color names) only ever lands inside JSON-escaped strings.
+// After filling a template the result is matched against it again; anything unexpected is blocked.
+const C4D_TPL = `"""
+Chromadrop -> Cinema 4D swatches ({{COUNT}} colors)
+Generated by Chromadrop v{{VERSION}} - https://kumodot.github.io/Chromadrop/
 
 How to use: Extensions > Script Manager, paste, Execute.
 The palette shows up as a new group in the Color Chooser swatches.
-Tested on Cinema 4D 2025.3.
+Tested on Cinema 4D 2025.3. Only run scripts from palettes you trust.
 """
 import c4d
 from c4d.modules import colorchooser as cc
 
-GROUP_NAME = ${JSON.stringify(title)}
-USE_GLOBAL = ${glob ? "True" : "False"}  # True = all projects, False = this document only
+GROUP_NAME = {{GROUP}}
+USE_GLOBAL = {{BOOL}}  # True = all projects, False = this document only
 
 # sRGB 0-1 (the Color Chooser expects sRGB, not linear)
 COLORS = [
-${rows.join("\n")}
+{{ROW*}}
 ]
-
+# Color names, same order as COLORS (reference only)
+NAMES = {{NAMES}}
 
 def main():
     cat = c4d.SWATCH_CATEGORY_GLOBAL if USE_GLOBAL else c4d.SWATCH_CATEGORY_DOCUMENT
@@ -2448,6 +2468,56 @@ def main():
 if __name__ == "__main__":
     main()
 `;
+const PY_TPL = "palette = [\n{{ROW*}}\n]\nnames = {{NAMES}}";
+const PY_ACES_TPL = "# ACEScg (AP1 linear)\n" + PY_TPL;
+const PY_BLOCKED = "# Chromadrop blocked this script: the palette has unexpected text.\n# Nothing here runs. Rename the palette or its colors and try again.";
+const jsonStrOk = x => typeof x === "string" && !/[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(x);
+const PY_RULES = {
+  COUNT: v => /^\d{1,4}$/.test(v),
+  VERSION: v => /^\d+\.\d+\.\d+$/.test(v),
+  BOOL: v => v === "True" || v === "False",
+  ROW: v => /^    \(-?\d+\.\d+, -?\d+\.\d+, -?\d+\.\d+\),  # #[0-9A-F]{6}$/.test(v),
+  GROUP: v => { try { const x = JSON.parse(v); return jsonStrOk(x) && JSON.stringify(x) === v; } catch { return false; } },
+  NAMES: v => { try { const x = JSON.parse(v); return Array.isArray(x) && x.every(jsonStrOk) && JSON.stringify(x) === v; } catch { return false; } },
+};
+// Fill {{TOKENS}} with a function replacer (no "$&" surprises from user text)
+const fillTpl = (tpl, vals) => tpl.replace(/\{\{(\w+)\*?\}\}/g, (_, k) => vals[k]);
+// true when every line of code matches the template (literal lines, {{TOKEN}} slots, {{ROW*}} = 1+ rows)
+function matchTemplate(code, tpl, rules = PY_RULES) {
+  const L = code.split("\n"), T = tpl.split("\n"); let i = 0;
+  for (const t of T) {
+    const rep = t.match(/^\{\{(\w+)\*\}\}$/);
+    if (rep) { const s0 = i; while (i < L.length && rules[rep[1]](L[i])) i++; if (i === s0) return false; continue; }
+    const tok = t.match(/\{\{(\w+)\}\}/);
+    const l = L[i++]; if (l == null) return false;
+    if (!tok) { if (l !== t) return false; continue; }
+    const pre = t.slice(0, tok.index), post = t.slice(tok.index + tok[0].length);
+    if (!l.startsWith(pre) || !l.endsWith(post) || l.length < pre.length + post.length) return false;
+    if (!rules[tok[1]](l.slice(pre.length, l.length - post.length))) return false;
+  }
+  return i === L.length;
+}
+function guardPy(code, tpl) {
+  if (matchTemplate(code, tpl)) return code;
+  console.warn(`[${APP.name}] blocked a Python export that did not match its template`);
+  toast("Blocked: unexpected text in the palette");
+  return PY_BLOCKED;
+}
+const pyRow = (vals, c) => `    (${vals.join(", ")}),  # ${toHex(c)}`;
+const pyNames = P => JSON.stringify(P.map(c => cleanText(c.name, 40)));
+function buildPyList(P, f, aces) {
+  return guardPy(fillTpl(aces ? PY_ACES_TPL : PY_TPL, { ROW: P.map(c => pyRow(f(c), c)).join("\n"), NAMES: pyNames(P) }), aces ? PY_ACES_TPL : PY_TPL);
+}
+function buildC4D() {
+  const P = state.palette, title = cleanText(paletteTitle(), 80) || "Chromadrop palette";
+  const glob = $("#c4dCat").value === "global", names = $("#c4dNames").checked;
+  const py = v => (v / 255).toFixed(6);
+  const code = fillTpl(C4D_TPL, {
+    COUNT: String(P.length), VERSION: APP.version, GROUP: JSON.stringify(title), BOOL: glob ? "True" : "False",
+    ROW: P.map(c => pyRow([py(c.r), py(c.g), py(c.b)], c)).join("\n"),
+    NAMES: names ? pyNames(P) : "[]",
+  });
+  return guardPy(code, C4D_TPL);
 }
 const SHARE_CATS = {
   image: [{ fmt: "card", label: "PNG card" }, { fmt: "spec", label: "Spec sheet (PDF / HTML)" }],
@@ -2476,7 +2546,7 @@ function renderShare() {
   if (dl) $("#btnShareDl").textContent = `Download ${dl[0].replace(/^_c4d_swatches/, "")}`;
   $("#btnShareCopy").style.display = shareFmt === "ase" ? "none" : "";
   $("#shareNote").textContent =
-    isC4D ? "Cinema 4D: Extensions > Script Manager, paste, Execute. Adds a swatch group named after the palette. Running it twice adds a second group."
+    isC4D ? "Cinema 4D: Extensions > Script Manager, paste, Execute. Adds a swatch group named after the palette. Running it twice adds a second group. Share the link, not the script: whoever gets the link generates the script themselves."
     : shareFmt === "link" ? ($("#sViewer").checked ? "Opens a read-only viewer: big swatches, click any value to copy it, downloads for C4D, ASE, PDF... \"Open in editor\" takes them to the full app. The colors live in the link itself, nothing is uploaded." : "Anyone opening this link sees the palette in the Chromadrop editor. The colors live in the link itself, no image is uploaded.")
     : shareFmt === "slack" ? "Paste straight into a Slack message. Add a visual with Image → Copy image."
     : shareFmt === "md" ? "Notion, GitHub, Obsidian (tables render there). Not for email: use the PNG card or plain text."
@@ -2518,10 +2588,11 @@ function loadFromHash() {
   const cols = p.split("-").filter(h => /^[0-9a-f]{6}$/i.test(h));
   if (!cols.length) return;
   state.palette = cols.map((h, i) => ({
-    id: state.nextId++, source: "pin", name: names[i] || "", userNamed: !!names[i], u: null, v: null,
+    id: state.nextId++, source: "pin", name: cleanText(names[i], 40), userNamed: !!cleanText(names[i], 40), u: null, v: null,
     r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16),
   }));
-  if (q.get("t")) { state.title = q.get("t"); state.imgName = q.get("t"); }
+  const t = cleanText(q.get("t"), 80);
+  if (t) { state.title = t; state.imgName = t; }
   render();
   $("#drop").innerHTML = `<b>Shared palette: ${cols.length} colors</b><span>Drop an image to see it in Blocks view with this palette</span>`;
   toast(`Loaded shared palette (${cols.length} colors)`);
@@ -3233,9 +3304,9 @@ function newLibColors(p) {
 }
 function loadLibEntry(p, append) {
   const src = append ? newLibColors(p) : p.colors;
-  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: p.origin || "history", ...hexToRgb(c.hex), name: c.name || "", userNamed: !!c.name, u: null, v: null }));
+  const cols = src.map(c => ({ id: state.nextId++, source: "pin", origin: p.origin || "history", ...hexToRgb(c.hex), name: cleanText(c.name, 40), userNamed: !!cleanText(c.name, 40), u: null, v: null }));
   state.palette = append ? [...state.palette, ...cols] : cols;
-  if (!append) { state.title = p.name; state.selId = null; }
+  if (!append) { state.title = cleanText(p.name, 80); state.selId = null; }
   render();
   const skipped = p.colors.length - cols.length;
   toast(append ? `Merged ${cols.length} color${cols.length === 1 ? "" : "s"} from "${p.name}"` + (skipped ? ` (${skipped} already there)` : "") : `Loaded "${p.name}"`);
@@ -3345,9 +3416,9 @@ function importLibFile(file) {
     const okHex = h => typeof h === "string" && /^#[0-9a-f]{6}$/i.test(h);
     const clean = p => ({
       id: typeof p.id === "string" ? p.id : newLibId(),
-      name: String(p.name || "Imported").slice(0, 120),
+      name: cleanText(p.name || "Imported", 120) || "Imported",
       created: Number.isFinite(p.created) ? p.created : Date.now(),
-      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: String(c.name || "").slice(0, 60), w: Number.isFinite(c.w) ? c.w : null })),
+      colors: (p.colors || []).filter(c => okHex(c.hex)).map(c => ({ hex: c.hex.toUpperCase(), name: cleanText(c.name, 60), w: Number.isFinite(c.w) ? c.w : null })),
     });
     let incoming = [];
     if (data && (data.type === "chromadrop-library" || data.type === "chromadrop-history") && Array.isArray(data.palettes)) incoming = data.palettes.map(clean);
